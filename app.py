@@ -674,9 +674,33 @@ def main():
 
     # Sidebar
     with st.sidebar:
-        st.image(
-            "https://via.placeholder.com/200x60/6d4aff/ffffff?text=Payment+Intel", width="stretch"
-        )
+        # Custom Proton-themed header
+        st.markdown("""
+        <div style="
+            background: linear-gradient(135deg, #6d4aff 0%, #5835d4 100%);
+            padding: 1.5rem 1rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(109, 74, 255, 0.3);
+        ">
+            <h1 style="
+                color: white;
+                font-size: 1.5rem;
+                font-weight: 700;
+                margin: 0;
+                letter-spacing: -0.02em;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            ">💳 Payment Intel</h1>
+            <p style="
+                color: rgba(255,255,255,0.9);
+                font-size: 0.75rem;
+                margin: 0.5rem 0 0 0;
+                font-weight: 500;
+                letter-spacing: 0.05em;
+            ">ANALYTICS SUITE</p>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.markdown("---")
 
