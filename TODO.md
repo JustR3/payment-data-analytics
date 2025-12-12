@@ -9,21 +9,21 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 
 ### Big Tasks
 - [x] Set up project structure
-- [ ] **Build `data_generator.py`**
-  - [ ] Implement `users` table generation
-  - [ ] Implement `subscriptions` table generation  
-  - [ ] Implement `transactions` table generation
-  - [ ] Inject Pattern #1: Germany/Apple Pay Friction (15% higher failure rate)
-  - [ ] Inject Pattern #2: Crypto Cohort (NULL country, 0% chargeback, underpayment errors)
-  - [ ] Inject Pattern #3: Black Friday Seasonality (November spike + 3-month churn)
-  - [ ] Export to CSV files
+- [x] **Build `data_generator.py`**
+  - [x] Implement `users` table generation
+  - [x] Implement `subscriptions` table generation  
+  - [x] Implement `transactions` table generation
+  - [x] Inject Pattern #1: Germany/Apple Pay Friction (15% higher failure rate)
+  - [x] Inject Pattern #2: Crypto Cohort (NULL country, 0% chargeback, underpayment errors)
+  - [x] Inject Pattern #3: Black Friday Seasonality (November spike + 3-month churn)
+  - [x] Export to CSV files
 
 ### Small Tasks
-- [ ] Add type hints to all functions
-- [ ] Add docstrings with pattern documentation
-- [ ] Validate data relationships (foreign keys)
-- [ ] Test data generation with 10k, 25k, 50k rows
-- [ ] Ensure proper date distributions (2-year history)
+- [x] Add type hints to all functions
+- [x] Add docstrings with pattern documentation
+- [x] Validate data relationships (foreign keys)
+- [x] Test data generation with 10k, 25k, 50k rows
+- [x] Ensure proper date distributions (2-year history)
 
 ---
 
@@ -71,17 +71,17 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 ## 📋 PHASE 4: DEPLOYMENT & POLISH
 
 ### Big Tasks
-- [ ] Create comprehensive README.md
-- [ ] Set up requirements.txt
+- [x] Create comprehensive README.md
+- [x] Set up project dependencies (pyproject.toml with UV)
 - [ ] Deploy to Streamlit Cloud
 - [ ] Create demo video/GIF
 
 ### Small Tasks
-- [ ] Add .gitignore
-- [ ] Document installation steps
+- [x] Add .gitignore
+- [x] Document installation steps
 - [ ] Add environment variable support
 - [ ] Create sample data for quick demo
-- [ ] Add error handling and logging
+- [x] Add error handling and logging
 - [ ] Write unit tests for key functions
 - [ ] Add performance benchmarks
 
