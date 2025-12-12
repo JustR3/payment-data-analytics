@@ -26,32 +26,43 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for Proton-style dark theme
+# Custom CSS for Proton brand theme
 st.markdown(
     """
 <style>
-    /* Proton-inspired color palette */
+    /* Proton authentic color palette */
     :root {
-        --proton-purple: #6d4aff;
-        --proton-dark: #1c1b22;
-        --proton-light: #2d2d35;
-        --success-green: #1ea672;
-        --warning-orange: #ff9900;
-        --danger-red: #dc3545;
+        --proton-purple: #6d4aff;          /* Proton primary purple */
+        --proton-purple-dark: #5835d4;     /* Darker purple variant */
+        --proton-background: #0c0c14;      /* True Proton dark background */
+        --proton-surface: #1c1b22;         /* Surface color */
+        --proton-surface-light: #2e2d39;   /* Lighter surface */
+        --proton-text: #ffffff;            /* Primary text */
+        --proton-text-muted: #a8a8b3;      /* Muted text */
+        --proton-success: #1ea672;         /* Success green */
+        --proton-warning: #ff9900;         /* Warning orange */
+        --proton-danger: #dc3545;          /* Danger red */
+        --proton-border: #3a3a48;          /* Border color */
     }
     
-    /* Main background */
+    /* Main background - Proton dark */
     .stApp {
-        background-color: #0d0d0f;
+        background-color: #0c0c14;
+        color: #ffffff;
     }
     
-    /* Sidebar styling */
+    /* Sidebar styling - Proton surface */
     [data-testid="stSidebar"] {
         background-color: #1c1b22;
-        border-right: 1px solid #6d4aff;
+        border-right: 2px solid #6d4aff;
     }
     
-    /* Metric cards */
+    /* Sidebar navigation items */
+    [data-testid="stSidebar"] .element-container {
+        color: #ffffff;
+    }
+    
+    /* Metric cards - Proton style */
     [data-testid="stMetricValue"] {
         font-size: 2rem;
         font-weight: 700;
@@ -60,27 +71,59 @@ st.markdown(
     
     [data-testid="stMetricDelta"] {
         font-size: 1rem;
-    }
-    
-    /* Headers */
-    h1, h2, h3 {
-        color: #ffffff;
         font-weight: 600;
     }
     
-    /* Dividers */
+    /* Headers - Proton typography */
+    h1, h2, h3 {
+        color: #ffffff;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+    
+    h1 {
+        color: #6d4aff;
+    }
+    
+    /* Dividers - Proton purple accent */
     hr {
         border-color: #6d4aff;
+        opacity: 0.3;
         margin: 2rem 0;
     }
     
-    /* Info boxes */
-    .info-box {
-        background-color: #2d2d35;
+    /* Info boxes - Proton surface style */
+    [data-testid="stAlert"] {
+        background-color: #2e2d39;
         border-left: 4px solid #6d4aff;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin: 1rem 0;
+        color: #ffffff;
+    }
+    
+    /* Buttons - Proton purple */
+    .stButton>button {
+        background-color: #6d4aff;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .stButton>button:hover {
+        background-color: #5835d4;
+        box-shadow: 0 4px 12px rgba(109, 74, 255, 0.4);
+    }
+    
+    /* Input fields - Proton style */
+    .stSelectbox, .stTextInput {
+        background-color: #2e2d39;
+        border-color: #3a3a48;
+        color: #ffffff;
+    }
+    
+    /* DataFrames - dark theme */
+    [data-testid="stDataFrame"] {
+        background-color: #1c1b22;
     }
     
     /* Success/Warning/Danger badges */
@@ -255,7 +298,8 @@ def render_executive_overview(analytics):
                 mode="lines+markers",
                 name="Churn Rate",
                 line=dict(color="#dc3545", width=3),
-                marker=dict(size=8),
+                marker=dict(size=10, color="#dc3545"),
+                hovertemplate="%{y:.1f}%<extra></extra>",
             )
         )
 
@@ -265,18 +309,35 @@ def render_executive_overview(analytics):
                 y=churn_df["retention_rate_pct"],
                 mode="lines+markers",
                 name="Retention Rate",
-                line=dict(color="#1ea672", width=3),
-                marker=dict(size=8),
+                line=dict(color="#6d4aff", width=3),
+                marker=dict(size=10, color="#6d4aff"),
+                hovertemplate="%{y:.1f}%<extra></extra>",
             )
         )
 
         fig.update_layout(
+            title=dict(
+                text="Monthly Churn & Retention Trends",
+                font=dict(color="#6d4aff", size=18)
+            ),
             template="plotly_dark",
+            plot_bgcolor="#0c0c14",
+            paper_bgcolor="#0c0c14",
             height=400,
             xaxis_title="Cohort Month",
             yaxis_title="Percentage (%)",
             hovermode="x unified",
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="right",
+                x=1,
+                font=dict(color="white")
+            ),
+            font=dict(color="white", family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto"),
+            xaxis=dict(gridcolor="#2e2d39"),
+            yaxis=dict(gridcolor="#2e2d39"),
         )
 
         st.plotly_chart(fig, width="stretch")
@@ -364,19 +425,19 @@ def render_friction_monitor(analytics):
         targets = [node_dict[tgt] for tgt in sankey_df["target"]]
         values = sankey_df["value"].tolist()
 
-        # Color scheme for Proton theme
+        # Color scheme - Proton brand palette
         node_colors = []
         for node in all_nodes:
             if node == "Attempt":
-                node_colors.append("#6d4aff")  # Proton purple
+                node_colors.append("#6d4aff")  # Proton primary purple
             elif node in ["Stripe", "PayPal", "Apple Pay", "Bitcoin"]:
-                node_colors.append("#4a90e2")  # Gateway blue
+                node_colors.append("#8a7aff")  # Lighter Proton purple
             elif node == "Authorized":
-                node_colors.append("#1ea672")  # Success green
+                node_colors.append("#1ea672")  # Proton success green
             elif node == "Settled":
-                node_colors.append("#0d8c5e")  # Dark green
+                node_colors.append("#16865e")  # Darker success green
             else:
-                node_colors.append("#dc3545")  # Decline red
+                node_colors.append("#dc3545")  # Proton danger red
 
         # Create Sankey diagram
         fig = go.Figure(
@@ -395,7 +456,7 @@ def render_friction_monitor(analytics):
                         source=sources,
                         target=targets,
                         value=values,
-                        color="rgba(109, 74, 255, 0.3)",
+                        color="rgba(109, 74, 255, 0.25)",
                         hovertemplate="%{source.label} → %{target.label}<br>%{value:,} transactions<extra></extra>",
                     ),
                 )
@@ -405,11 +466,11 @@ def render_friction_monitor(analytics):
         fig.update_layout(
             title=dict(
                 text=f"Payment Flow Analysis{' - ' + selected_country if country_filter else ''}",
-                font=dict(size=20, color="white"),
+                font=dict(size=20, color="#6d4aff", family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto"),
             ),
             font=dict(size=12, color="white"),
-            plot_bgcolor="#0d0d0f",
-            paper_bgcolor="#0d0d0f",
+            plot_bgcolor="#0c0c14",
+            paper_bgcolor="#0c0c14",
             height=600,
         )
 
@@ -503,25 +564,38 @@ def render_unit_economics(analytics):
                 x=pivot_df.columns,
                 y=[str(d)[:7] for d in pivot_df.index],  # Format dates
                 colorscale=[
-                    [0, "#dc3545"],  # Red for low retention
-                    [0.5, "#ff9900"],  # Orange for medium
-                    [1, "#1ea672"],  # Green for high retention
+                    [0, "#dc3545"],      # Proton red for low retention
+                    [0.3, "#ff9900"],    # Proton orange for medium-low
+                    [0.6, "#8a7aff"],    # Light Proton purple for medium-high
+                    [1, "#6d4aff"],      # Proton primary purple for high retention
                 ],
                 text=pivot_df.values,
                 texttemplate="%{text:.1f}%",
-                textfont={"size": 10},
-                colorbar=dict(title="Retention %", ticksuffix="%"),
+                textfont={"size": 10, "color": "white"},
+                colorbar=dict(
+                    title="Retention %",
+                    ticksuffix="%",
+                    tickfont=dict(color="white"),
+                    titlefont=dict(color="white")
+                ),
                 hovertemplate="Cohort: %{y}<br>Month %{x}<br>Retention: %{z:.1f}%<extra></extra>",
             )
         )
 
         fig.update_layout(
-            title="12-Month Cohort Retention Heatmap",
+            title=dict(
+                text="12-Month Cohort Retention Heatmap",
+                font=dict(color="#6d4aff", size=20)
+            ),
             xaxis_title="Months Since Signup",
             yaxis_title="Signup Cohort",
             template="plotly_dark",
+            plot_bgcolor="#0c0c14",
+            paper_bgcolor="#0c0c14",
             height=600,
-            font=dict(color="white"),
+            font=dict(color="white", family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto"),
+            xaxis=dict(gridcolor="#2e2d39"),
+            yaxis=dict(gridcolor="#2e2d39"),
         )
 
         st.plotly_chart(fig, width="stretch")
