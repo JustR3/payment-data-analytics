@@ -50,20 +50,20 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 ## 📋 PHASE 3: STREAMLIT DASHBOARD
 
 ### Big Tasks
-- [ ] **Build `app.py`**
-  - [ ] Set up dark theme (Proton-style)
-  - [ ] Sidebar navigation structure
-  - [ ] Page 1: Executive Overview (MRR, Active Subs, NRR)
-  - [ ] Page 2: Friction Monitor (Sankey: Attempt → Gateway → Auth → Settlement)
-  - [ ] Page 3: Unit Economics (Cohort heatmap - 12 months)
+- [x] **Build `app.py`**
+  - [x] Set up dark theme (Proton-style)
+  - [x] Sidebar navigation structure
+  - [x] Page 1: Executive Overview (MRR, Active Subs, NRR)
+  - [x] Page 2: Friction Monitor (Sankey: Attempt → Gateway → Auth → Settlement)
+  - [x] Page 3: Unit Economics (Cohort heatmap - 12 months)
 
 ### Small Tasks
-- [ ] Add country filter functionality
-- [ ] Implement date range selector
-- [ ] Add metrics cards with delta indicators
-- [ ] Create custom CSS for Proton branding
-- [ ] Add data refresh mechanism
-- [ ] Implement caching for performance
+- [x] Add country filter functionality
+- [x] Implement date range selector
+- [x] Add metrics cards with delta indicators
+- [x] Create custom CSS for Proton branding
+- [x] Add data refresh mechanism
+- [x] Implement caching for performance
 - [ ] Add export to PDF/CSV functionality
 
 ---
