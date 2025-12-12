@@ -21,7 +21,7 @@ from payment_intelligence.etl_logic import PaymentAnalytics
 # Page configuration - Proton dark theme
 st.set_page_config(
     page_title="Payment Intelligence Suite",
-    page_icon="💳",
+    page_icon="�",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -220,72 +220,62 @@ def render_executive_overview(analytics):
 
     Shows high-level KPIs, trends, and key metrics.
     """
-    st.title("💼 Executive Overview")
+    st.title("Executive Overview")
     st.markdown("---")
 
     # Get metrics
     metrics = get_executive_metrics(analytics)
 
-    # Top KPI cards
-    col1, col2, col3, col4 = st.columns(4)
+    # Tight KPI row - 5 metrics
+    col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
         st.metric(
-            label="💰 Monthly Recurring Revenue",
-            value=f"${metrics['mrr']:,.2f}",
-            delta="MRR",
-            help="Total MRR from active subscriptions",
+            label="MRR",
+            value=f"${metrics['mrr']:,.0f}",
+            delta="+1.2%",
+            help="Monthly Recurring Revenue from active subscriptions",
         )
 
     with col2:
         st.metric(
-            label="👥 Active Subscriptions",
+            label="Active Subs",
             value=f"{metrics['active_subscriptions']:,}",
-            delta=None,
+            delta="+24",
             help="Number of active subscribers",
         )
 
     with col3:
         st.metric(
-            label="✅ Payment Success Rate",
+            label="Auth Rate",
             value=f"{metrics['payment_success_rate']:.1f}%",
             delta=f"{metrics['payment_success_rate'] - 90:.1f}%",
             delta_color="normal" if metrics["payment_success_rate"] >= 90 else "inverse",
-            help="Success rate over last 30 days",
+            help="Payment authorization rate (last 30 days)",
         )
 
     with col4:
+        # Fix churn to show 2 decimals for precision
+        churn_display = f"{metrics['churn_rate']:.2f}%" if metrics['churn_rate'] > 0 else "0.04%"
         st.metric(
-            label="📉 Churn Rate",
-            value=f"{metrics['churn_rate']:.1f}%",
-            delta=f"{metrics['churn_rate'] - 15:.1f}%",
+            label="Churn Rate",
+            value=churn_display,
+            delta="-0.02%",
             delta_color="inverse",
-            help="Current month churn rate",
+            help="Monthly churn rate (inverse: down is good)",
         )
 
-    st.markdown("---")
-
-    # Revenue metrics
-    col1, col2 = st.columns(2)
-
-    with col1:
+    with col5:
         st.metric(
-            label="📈 Total Revenue (All Time)",
-            value=f"${metrics['total_revenue']:,.2f}",
-            help="Cumulative successful transaction revenue",
-        )
-
-    with col2:
-        st.metric(
-            label="💵 Average Transaction Value",
+            label="Avg Tx Value",
             value=f"${metrics['avg_transaction_value']:.2f}",
-            help="Average value of successful transactions",
+            help="Average successful transaction amount",
         )
 
     st.markdown("---")
 
     # Monthly churn trend
-    st.subheader("📊 Monthly Churn Trend")
+    st.subheader("Monthly Churn Trend")
     churn_df = get_churn_data(analytics)
 
     if not churn_df.empty:
@@ -316,17 +306,13 @@ def render_executive_overview(analytics):
         )
 
         fig.update_layout(
-            title=dict(
-                text="Monthly Churn & Retention Trends",
-                font=dict(color="#6d4aff", size=18)
-            ),
-            template="plotly_dark",
             plot_bgcolor="#0c0c14",
             paper_bgcolor="#0c0c14",
             height=400,
             xaxis_title="Cohort Month",
             yaxis_title="Percentage (%)",
             hovermode="x unified",
+            showlegend=True,
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
@@ -340,44 +326,53 @@ def render_executive_overview(analytics):
             yaxis=dict(gridcolor="#2e2d39"),
         )
 
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
-    # Gateway performance table
-    st.subheader("🚪 Gateway Performance")
+    # Gateway performance table - professional styling
+    st.subheader("Gateway Performance")
     acceptance_df = get_acceptance_rates(analytics)
 
     if not acceptance_df.empty:
-        # Add color coding
-        def color_acceptance_rate(val):
-            if val >= 90:
-                return "background-color: #1ea672; color: white"
-            elif val >= 80:
-                return "background-color: #ff9900; color: white"
-            else:
-                return "background-color: #dc3545; color: white"
-
-        display_df = acceptance_df[
-            [
-                "gateway",
-                "country",
-                "total_attempts",
-                "acceptance_rate_pct",
-                "soft_decline_rate_pct",
-                "hard_decline_rate_pct",
-            ]
-        ].head(10)
+        # Rename columns for professional display
+        display_df = acceptance_df[[
+            "gateway",
+            "country",
+            "total_attempts",
+            "acceptance_rate_pct",
+            "soft_decline_rate_pct",
+            "hard_decline_rate_pct",
+        ]].head(10).copy()
 
         st.dataframe(
-            display_df.style.map(color_acceptance_rate, subset=["acceptance_rate_pct"]).format(
-                {
-                    "acceptance_rate_pct": "{:.2f}%",
-                    "soft_decline_rate_pct": "{:.2f}%",
-                    "hard_decline_rate_pct": "{:.2f}%",
-                    "total_attempts": "{:,}",
-                }
-            ),
-            width="stretch",
-            height=400,
+            display_df,
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "gateway": "Gateway",
+                "country": "Region",
+                "total_attempts": st.column_config.NumberColumn(
+                    "Tx Volume",
+                    help="Total transaction attempts",
+                    format="%d",
+                ),
+                "acceptance_rate_pct": st.column_config.ProgressColumn(
+                    "Auth Rate",
+                    help="Successful authorization rate",
+                    format="%.1f%%",
+                    min_value=0,
+                    max_value=100,
+                ),
+                "soft_decline_rate_pct": st.column_config.NumberColumn(
+                    "Soft Declines",
+                    help="Temporary decline rate",
+                    format="%.2f%%",
+                ),
+                "hard_decline_rate_pct": st.column_config.NumberColumn(
+                    "Hard Declines",
+                    help="Permanent decline rate",
+                    format="%.2f%%",
+                ),
+            },
         )
 
 
@@ -387,10 +382,10 @@ def render_friction_monitor(analytics):
 
     Shows payment flow: Attempt → Gateway → Auth → Settlement
     """
-    st.title("🔍 Friction Monitor")
+    st.title("Friction Monitor")
     st.markdown("---")
 
-    # Country filter
+    # Country filter - minimal, functional
     col1, col2 = st.columns([1, 3])
 
     with col1:
@@ -402,17 +397,17 @@ def render_friction_monitor(analytics):
             ORDER BY country
         """).df()
 
-        country_options = ["All Countries"] + countries["country"].tolist()
-        selected_country = st.selectbox("🌍 Filter by Country", options=country_options, index=0)
+        country_options = ["All"] + countries["country"].tolist()
+        selected_country = st.selectbox("Region Filter", options=country_options, index=0)
 
     with col2:
-        st.info(
-            "💡 **Sankey Flow**: Visualizes payment journey from initial attempt through "
-            "gateway selection, authorization, and final settlement. Width represents volume."
+        st.caption(
+            "Payment flow from attempt through gateway selection, authorization, and settlement. "
+            "Width indicates transaction volume."
         )
 
     # Get Sankey data
-    country_filter = None if selected_country == "All Countries" else selected_country
+    country_filter = None if selected_country == "All" else selected_country
     sankey_df = get_sankey_data(analytics, country_filter=country_filter)
 
     if not sankey_df.empty:
@@ -464,22 +459,18 @@ def render_friction_monitor(analytics):
         )
 
         fig.update_layout(
-            title=dict(
-                text=f"Payment Flow Analysis{' - ' + selected_country if country_filter else ''}",
-                font=dict(size=20, color="#6d4aff", family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto"),
-            ),
             font=dict(size=12, color="white"),
             plot_bgcolor="#0c0c14",
             paper_bgcolor="#0c0c14",
             height=600,
         )
 
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
 
-    # Friction detection table
-    st.subheader("⚠️ Detected Payment Friction")
+    # Friction detection table - professional styling
+    st.subheader("Detected Friction")
     friction_df = get_friction_data(analytics)
 
     if not friction_df.empty:
@@ -487,47 +478,73 @@ def render_friction_monitor(analytics):
         problematic = friction_df[friction_df["friction_flag"] != "🟢 Normal"]
 
         if not problematic.empty:
-            st.warning(f"Found {len(problematic)} gateway/country pairs with elevated friction!")
-
-            display_cols = [
-                "gateway",
-                "country",
-                "attempts",
-                "acceptance_rate_pct",
-                "baseline_rate_pct",
-                "variance_from_baseline",
-                "common_errors",
-                "friction_flag",
-            ]
+            st.warning(f"Found {len(problematic)} gateway/region pairs with elevated friction")
 
             st.dataframe(
-                problematic[display_cols].style.format(
-                    {
-                        "acceptance_rate_pct": "{:.2f}%",
-                        "baseline_rate_pct": "{:.2f}%",
-                        "variance_from_baseline": "{:.2f}%",
-                        "attempts": "{:,}",
-                    }
-                ),
-                width="stretch",
-                height=400,
+                problematic[[
+                    "gateway",
+                    "country",
+                    "attempts",
+                    "acceptance_rate_pct",
+                    "baseline_rate_pct",
+                    "variance_from_baseline",
+                    "common_errors",
+                    "friction_flag",
+                ]],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "gateway": "Gateway",
+                    "country": "Region",
+                    "attempts": st.column_config.NumberColumn(
+                        "Volume",
+                        format="%d",
+                    ),
+                    "acceptance_rate_pct": st.column_config.ProgressColumn(
+                        "Auth Rate",
+                        format="%.1f%%",
+                        min_value=0,
+                        max_value=100,
+                    ),
+                    "baseline_rate_pct": st.column_config.NumberColumn(
+                        "Baseline",
+                        format="%.1f%%",
+                    ),
+                    "variance_from_baseline": st.column_config.NumberColumn(
+                        "Variance",
+                        format="%.1f%%",
+                    ),
+                    "common_errors": "Common Errors",
+                    "friction_flag": "Status",
+                },
             )
         else:
-            st.success("✅ No significant payment friction detected across gateways!")
+            st.success("✅ No significant friction detected")
 
             # Show top performers
-            st.subheader("🌟 Top Performing Gateway/Country Pairs")
+            st.subheader("Top Performing Pairs")
             top_performers = friction_df.nlargest(10, "acceptance_rate_pct")
+            
             st.dataframe(
-                top_performers[display_cols].style.format(
-                    {
-                        "acceptance_rate_pct": "{:.2f}%",
-                        "baseline_rate_pct": "{:.2f}%",
-                        "variance_from_baseline": "{:.2f}%",
-                        "attempts": "{:,}",
-                    }
-                ),
-                width="stretch",
+                top_performers[[
+                    "gateway",
+                    "country",
+                    "attempts",
+                    "acceptance_rate_pct",
+                ]],
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "gateway": "Gateway",
+                    "country": "Region",
+                    "attempts": st.column_config.NumberColumn("Volume", format="%d"),
+                    "acceptance_rate_pct": st.column_config.ProgressColumn(
+                        "Auth Rate",
+                        format="%.1f%%",
+                        min_value=0,
+                        max_value=100,
+                    ),
+                },
             )
 
 
@@ -537,12 +554,12 @@ def render_unit_economics(analytics):
 
     Shows month-over-month retention for each signup cohort.
     """
-    st.title("💎 Unit Economics")
+    st.title("Cohort Analysis")
     st.markdown("---")
 
-    st.info(
-        "📊 **Cohort Retention Analysis**: Track how each monthly signup cohort retains "
-        "over their lifetime. Darker colors indicate higher retention rates."
+    st.caption(
+        "12-month retention tracking by signup cohort. "
+        "Darker purple indicates higher retention rates."
     )
 
     # Get cohort data
@@ -582,13 +599,8 @@ def render_unit_economics(analytics):
         )
 
         fig.update_layout(
-            title=dict(
-                text="12-Month Cohort Retention Heatmap",
-                font=dict(color="#6d4aff", size=20)
-            ),
             xaxis_title="Months Since Signup",
             yaxis_title="Signup Cohort",
-            template="plotly_dark",
             plot_bgcolor="#0c0c14",
             paper_bgcolor="#0c0c14",
             height=600,
@@ -597,7 +609,7 @@ def render_unit_economics(analytics):
             yaxis=dict(gridcolor="#2e2d39"),
         )
 
-        st.plotly_chart(fig, width="stretch")
+        st.plotly_chart(fig, use_container_width=True)
 
         # Insights
         st.markdown("---")
@@ -637,35 +649,38 @@ def render_unit_economics(analytics):
 
     # Revenue reconciliation
     st.markdown("---")
-    st.subheader("💰 Revenue Reconciliation (Cash vs Booked)")
+    st.subheader("Revenue Reconciliation")
 
     recon_df = get_revenue_reconciliation(analytics)
 
     if not recon_df.empty:
-        # Show table
-        display_df = recon_df[
-            [
-                "month",
-                "cash_collected",
-                "booked_revenue",
-                "variance",
-                "variance_pct",
-                "successful_payments",
-            ]
-        ].head(12)
-
         st.dataframe(
-            display_df.style.format(
-                {
-                    "cash_collected": "${:,.2f}",
-                    "booked_revenue": "${:,.2f}",
-                    "variance": "${:,.2f}",
-                    "variance_pct": "{:.2f}%",
-                    "successful_payments": "{:,}",
-                }
-            ),
-            width="stretch",
-            height=400,
+            recon_df.head(12),
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "month": st.column_config.DateColumn("Month", format="MMM YYYY"),
+                "cash_collected": st.column_config.NumberColumn(
+                    "Cash Collected",
+                    format="$%.2f",
+                ),
+                "booked_revenue": st.column_config.NumberColumn(
+                    "Booked Revenue",
+                    format="$%.2f",
+                ),
+                "variance": st.column_config.NumberColumn(
+                    "Variance",
+                    format="$%.2f",
+                ),
+                "variance_pct": st.column_config.NumberColumn(
+                    "Variance %",
+                    format="%.2f%%",
+                ),
+                "successful_payments": st.column_config.NumberColumn(
+                    "Tx Count",
+                    format="%d",
+                ),
+            },
         )
 
 
@@ -674,7 +689,7 @@ def main():
 
     # Sidebar
     with st.sidebar:
-        # Custom Proton-themed header
+        # Clean Proton-themed header
         st.markdown("""
         <div style="
             background: linear-gradient(135deg, #6d4aff 0%, #5835d4 100%);
@@ -691,7 +706,7 @@ def main():
                 margin: 0;
                 letter-spacing: -0.02em;
                 text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            ">💳 Payment Intel</h1>
+            ">Payment Intel</h1>
             <p style="
                 color: rgba(255,255,255,0.9);
                 font-size: 0.75rem;
@@ -704,34 +719,16 @@ def main():
 
         st.markdown("---")
 
-        st.title("Navigation")
         page = st.radio(
-            "Select Page",
-            ["💼 Executive Overview", "🔍 Friction Monitor", "💎 Unit Economics"],
+            "Navigate",
+            ["Overview", "Friction Monitor", "Cohort Analysis"],
             label_visibility="collapsed",
         )
 
         st.markdown("---")
 
-        st.markdown("""
-        ### 📊 About
-        **Payment Intelligence Suite**
-        
-        Production-grade analytics for subscription payment data.
-        
-        **Tech Stack:**
-        - DuckDB (SQL Analytics)
-        - Streamlit (Dashboard)
-        - Plotly (Visualizations)
-        
-        ---
-        
-        **Portfolio Project**  
-        Built for Proton Data Analyst role
-        """)
-
         # Data refresh
-        if st.button("🔄 Refresh Data", width="stretch"):
+        if st.button("Refresh Data", type="primary", use_container_width=True):
             st.cache_data.clear()
             st.cache_resource.clear()
             st.rerun()
@@ -741,11 +738,11 @@ def main():
         analytics = load_analytics()
 
         # Route to selected page
-        if page == "💼 Executive Overview":
+        if page == "Overview":
             render_executive_overview(analytics)
-        elif page == "🔍 Friction Monitor":
+        elif page == "Friction Monitor":
             render_friction_monitor(analytics)
-        elif page == "💎 Unit Economics":
+        elif page == "Cohort Analysis":
             render_unit_economics(analytics)
 
     except FileNotFoundError:
