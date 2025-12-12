@@ -20,7 +20,7 @@ from pathlib import Path
 import pandas as pd
 from datetime import datetime, timedelta
 
-from src.payment_intelligence.etl_logic import PaymentAnalytics
+from payment_intelligence.etl_logic import PaymentAnalytics
 
 # Page configuration - Proton dark theme
 st.set_page_config(

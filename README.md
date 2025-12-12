@@ -61,7 +61,7 @@ uv sync
 uv run python scripts/generate_data.py
 
 # Run analytics validation
-uv run python scripts/etl_logic.py
+uv run python scripts/run_analysis.py
 
 # Launch the dashboard
 uv run streamlit run app.py
