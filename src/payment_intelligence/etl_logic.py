@@ -431,7 +431,9 @@ class PaymentAnalytics:
         Returns:
             DataFrame with source, target, value for Plotly Sankey
         """
-        country_clause = f"WHERE country = '{country_filter}'" if country_filter else ""
+        # Create both WHERE and AND versions for different contexts
+        country_where = f"WHERE country = '{country_filter}'" if country_filter else ""
+        country_and = f"AND country = '{country_filter}'" if country_filter else ""
         
         query = f"""
         WITH flow_data AS (
@@ -440,7 +442,7 @@ class PaymentAnalytics:
                 gateway as target,
                 COUNT(*) as value
             FROM transactions
-            {country_clause}
+            {country_where}
             GROUP BY gateway
             
             UNION ALL
@@ -454,7 +456,7 @@ class PaymentAnalytics:
                 END as target,
                 COUNT(*) as value
             FROM transactions
-            {country_clause}
+            {country_where}
             GROUP BY gateway, status
             
             UNION ALL
@@ -464,8 +466,8 @@ class PaymentAnalytics:
                 'Settled' as target,
                 COUNT(*) as value
             FROM transactions
-            {country_clause}
             WHERE status = 'Success'
+            {country_and}
         )
         SELECT source, target, value
         FROM flow_data
