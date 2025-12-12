@@ -14,7 +14,7 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
   - [x] Implement `subscriptions` table generation  
   - [x] Implement `transactions` table generation
   - [x] Inject Pattern #1: High Friction - Germany/Apple Pay (15% higher failure, >10% variance)
-  - [x] Inject Pattern #2: Medium Friction - France/Stripe (9% higher failure, 5-10% variance)
+  - [x] Inject Pattern #2: Medium Friction - France/PayPal (9% higher failure, 5-10% variance)
   - [x] Inject Pattern #3: Crypto Cohort (NULL country, 0% chargeback, underpayment errors)
   - [x] Inject Pattern #4: Black Friday Seasonality (November spike + 3-month churn)
   - [x] Export to CSV files
@@ -158,11 +158,12 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 ---
 
 ## 📊 SUCCESS METRICS
-- [x] **155,518 transactions** generated (15K users, 18.6K subscriptions)
+- [x] **155,649 transactions** generated (15K users, 18.6K subscriptions)
 - [x] **All 4 injected patterns** detectable in analytics:
-  - ✅ High Friction (Germany/Apple Pay): 77.6% acceptance vs 90.5% baseline (-12.9%)
-  - ✅ Medium Friction (France/Stripe): 83.1% acceptance vs 90.5% baseline (-7.4%)
-  - ✅ Bitcoin privacy: 100% NULL countries, 15,381 transactions
+  - ✅ High Friction (Germany/Apple Pay): 76.4% acceptance vs 90.8% baseline (-14.4%)
+  - ✅ Medium Friction (France/PayPal): 84.8% acceptance vs 90.8% baseline (-6.1%)
+  - ✅ Bitcoin privacy: 100% NULL countries, 15,832 transactions
+  - ✅ Black Friday churn: November cohorts 19.7% vs 14.9% baseline (+4.8%)
   - ✅ Black Friday churn: November cohorts 19.7% vs 14.9% baseline (+4.8%)
 - [x] **Dashboard loads in ~4 seconds** (50% faster after optimization)
 - [x] **Three-tier friction detection** (High/Medium/Low with proper thresholds)

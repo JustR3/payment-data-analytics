@@ -104,8 +104,8 @@ The data generator includes **4 injected patterns** for realistic anomaly detect
 - Simulates authentication/regulatory friction
 - **Observable**: Detected as "High Friction" (>10% variance from baseline)
 
-### 2. **Medium Friction: France + Stripe**
-- Stripe transactions in France fail **9% more often** than baseline (~17% total)
+### 2. **Medium Friction: France + PayPal**
+- PayPal transactions in France fail **9% more often** than baseline (~17% total)
 - Simulates moderate payment authentication issues
 - **Observable**: Detected as "Medium Friction" (5-10% variance from baseline)
 
