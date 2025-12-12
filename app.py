@@ -573,10 +573,9 @@ def render_unit_economics(analytics):
                 texttemplate="%{text:.1f}%",
                 textfont={"size": 10, "color": "white"},
                 colorbar=dict(
-                    title="Retention %",
+                    title=dict(text="Retention %", font=dict(color="white")),
                     ticksuffix="%",
-                    tickfont=dict(color="white"),
-                    titlefont=dict(color="white")
+                    tickfont=dict(color="white")
                 ),
                 hovertemplate="Cohort: %{y}<br>Month %{x}<br>Retention: %{z:.1f}%<extra></extra>",
             )
