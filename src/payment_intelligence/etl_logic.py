@@ -95,10 +95,15 @@ class PaymentAnalytics:
         """)
 
         # Create indexes for performance
+        self.conn.execute("CREATE INDEX idx_users_id ON users(user_id)")
         self.conn.execute("CREATE INDEX idx_users_country ON users(country)")
+        self.conn.execute("CREATE INDEX idx_users_signup ON users(signup_date)")
+        self.conn.execute("CREATE INDEX idx_subs_user ON subscriptions(user_id)")
         self.conn.execute("CREATE INDEX idx_subs_status ON subscriptions(status)")
+        self.conn.execute("CREATE INDEX idx_txs_sub ON transactions(sub_id)")
         self.conn.execute("CREATE INDEX idx_txs_gateway ON transactions(gateway)")
         self.conn.execute("CREATE INDEX idx_txs_date ON transactions(tx_date)")
+        self.conn.execute("CREATE INDEX idx_txs_status ON transactions(status)")
 
         self.tables_loaded = True
 
@@ -213,36 +218,55 @@ class PaymentAnalytics:
             DataFrame with monthly cash vs booked revenue reconciliation
         """
         query = """
-        WITH monthly_cash AS (
+        WITH combined_revenue AS (
+            -- Cash transactions
             SELECT 
                 DATE_TRUNC('month', tx_date) as month,
-                SUM(CASE WHEN status = 'Success' THEN amount ELSE 0 END) as cash_collected,
-                COUNT(CASE WHEN status = 'Success' THEN 1 END) as successful_payments,
-                COUNT(*) as total_attempts
+                SUM(amount) as cash_collected,
+                0 as booked_revenue,
+                COUNT(*) as successful_payments,
+                COUNT(*) as total_attempts,
+                0 as active_subscriptions
             FROM transactions
+            WHERE status = 'Success'
             GROUP BY DATE_TRUNC('month', tx_date)
-        ),
-        monthly_booked AS (
+            
+            UNION ALL
+            
+            -- Booked MRR
             SELECT 
-                DATE_TRUNC('month', s.start_date) as month,
-                SUM(s.mrr_amount) as booked_revenue,
-                COUNT(DISTINCT s.sub_id) as active_subscriptions
-            FROM subscriptions s
-            WHERE s.status IN ('Active', 'Past Due')
-            GROUP BY DATE_TRUNC('month', s.start_date)
+                DATE_TRUNC('month', start_date) as month,
+                0 as cash_collected,
+                SUM(mrr_amount) as booked_revenue,
+                0 as successful_payments,
+                0 as total_attempts,
+                COUNT(DISTINCT sub_id) as active_subscriptions
+            FROM subscriptions
+            WHERE status IN ('Active', 'Past Due')
+            GROUP BY DATE_TRUNC('month', start_date)
+        ),
+        monthly_totals AS (
+            SELECT 
+                month,
+                SUM(cash_collected) as cash_collected,
+                SUM(booked_revenue) as booked_revenue,
+                SUM(successful_payments) as successful_payments,
+                SUM(total_attempts) as total_attempts,
+                SUM(active_subscriptions) as active_subscriptions
+            FROM combined_revenue
+            GROUP BY month
         )
         SELECT 
-            COALESCE(c.month, b.month) as month,
-            COALESCE(c.cash_collected, 0) as cash_collected,
-            COALESCE(b.booked_revenue, 0) as booked_revenue,
-            COALESCE(c.cash_collected, 0) - COALESCE(b.booked_revenue, 0) as variance,
-            ROUND((COALESCE(c.cash_collected, 0) - COALESCE(b.booked_revenue, 0)) / 
-                  NULLIF(COALESCE(b.booked_revenue, 0), 0) * 100, 2) as variance_pct,
-            COALESCE(c.successful_payments, 0) as successful_payments,
-            COALESCE(c.total_attempts, 0) as total_attempts,
-            COALESCE(b.active_subscriptions, 0) as active_subscriptions
-        FROM monthly_cash c
-        FULL OUTER JOIN monthly_booked b ON c.month = b.month
+            month,
+            cash_collected,
+            booked_revenue,
+            cash_collected - booked_revenue as variance,
+            ROUND((cash_collected - booked_revenue) / NULLIF(booked_revenue, 0) * 100, 2) as variance_pct,
+            successful_payments,
+            total_attempts,
+            active_subscriptions
+        FROM monthly_totals
+        WHERE month IS NOT NULL
         ORDER BY month DESC
         LIMIT 12
         """
@@ -292,8 +316,7 @@ class PaymentAnalytics:
                 WHEN g.acceptance_rate < (b.overall_acceptance_rate * 100 - 5) THEN '🟡 Medium Friction'
                 ELSE '🟢 Normal'
             END as friction_flag
-        FROM gateway_country_stats g
-        CROSS JOIN baseline_acceptance b
+        FROM gateway_country_stats g, baseline_acceptance b
         ORDER BY variance_from_baseline ASC, attempts DESC
         """
 
@@ -327,39 +350,37 @@ class PaymentAnalytics:
             FROM cohort_base
             GROUP BY cohort_month
         ),
-        transaction_months AS (
+        user_transaction_months AS (
+            -- Get successful transactions with user_id from subscriptions
             SELECT DISTINCT
                 DATE_TRUNC('month', t.tx_date) as transaction_month,
-                t.user_id,
-                t.sub_id
+                s.user_id
             FROM transactions t
+            JOIN subscriptions s ON t.sub_id = s.sub_id
             WHERE t.status = 'Success'
         ),
         retention_by_month AS (
             SELECT 
                 cb.cohort_month,
-                DATE_DIFF('month', cb.cohort_month, tm.transaction_month) as months_since_signup,
-                COUNT(DISTINCT cb.user_id) as retained_users,
+                DATE_DIFF('month', cb.cohort_month, utm.transaction_month) as months_since_signup,
+                COUNT(DISTINCT utm.user_id) as retained_users,
                 cs.cohort_size
             FROM cohort_base cb
-            CROSS JOIN (SELECT DISTINCT transaction_month FROM transaction_months) tm
-            LEFT JOIN transaction_months t 
-                ON cb.user_id = t.user_id 
-                AND tm.transaction_month = t.transaction_month
             JOIN cohort_sizes cs ON cb.cohort_month = cs.cohort_month
-            WHERE DATE_DIFF('month', cb.cohort_month, tm.transaction_month) >= 0
-                AND DATE_DIFF('month', cb.cohort_month, tm.transaction_month) <= 12
-            GROUP BY cb.cohort_month, tm.transaction_month, cs.cohort_size
+            LEFT JOIN user_transaction_months utm 
+                ON cb.user_id = utm.user_id
+                AND DATE_DIFF('month', cb.cohort_month, utm.transaction_month) BETWEEN 0 AND 12
+            WHERE utm.transaction_month IS NOT NULL
+            GROUP BY cb.cohort_month, DATE_DIFF('month', cb.cohort_month, utm.transaction_month), cs.cohort_size
         )
         SELECT 
             cohort_month,
             months_since_signup,
             retained_users,
             cohort_size,
-            ROUND(retained_users::DECIMAL / cohort_size * 100, 1) as retention_rate_pct
+            ROUND(retained_users::DECIMAL / NULLIF(cohort_size, 0) * 100, 1) as retention_rate_pct
         FROM retention_by_month
         WHERE cohort_month >= CURRENT_DATE - INTERVAL '{cohort_months} months'
-            AND retained_users > 0
         ORDER BY cohort_month, months_since_signup
         """
 
@@ -441,22 +462,14 @@ class PaymentAnalytics:
         Returns:
             DataFrame with source, target, value for Plotly Sankey
         """
-        # Build WHERE clauses conditionally
-        if country_filter:
-            where_country = f"WHERE country = '{country_filter}'"
-            and_country = f"AND country = '{country_filter}'"
-        else:
-            where_country = ""
-            and_country = ""
-
-        query = f"""
+        query = """
         WITH flow_data AS (
             SELECT 
                 'Attempt' as source,
                 gateway as target,
                 COUNT(*) as value
             FROM transactions
-            {where_country}
+            WHERE ? IS NULL OR country = ?
             GROUP BY gateway
             
             UNION ALL
@@ -470,7 +483,7 @@ class PaymentAnalytics:
                 END as target,
                 COUNT(*) as value
             FROM transactions
-            {where_country}
+            WHERE ? IS NULL OR country = ?
             GROUP BY gateway, status
             
             UNION ALL
@@ -480,7 +493,8 @@ class PaymentAnalytics:
                 'Settled' as target,
                 COUNT(*) as value
             FROM transactions
-            WHERE status = 'Success' {and_country}
+            WHERE status = 'Success' 
+                AND (? IS NULL OR country = ?)
         )
         SELECT source, target, value
         FROM flow_data
@@ -488,7 +502,7 @@ class PaymentAnalytics:
         ORDER BY value DESC
         """
 
-        return self.conn.execute(query).df()
+        return self.conn.execute(query, [country_filter, country_filter, country_filter, country_filter, country_filter, country_filter]).df()
 
     def close(self) -> None:
         """Close DuckDB connection."""
