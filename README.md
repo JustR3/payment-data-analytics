@@ -97,19 +97,24 @@ payment-data-analytics/
 
 ## 🎲 Synthetic Data Patterns
 
-The data generator includes **3 injected patterns** for realistic anomaly detection:
+The data generator includes **4 injected patterns** for realistic anomaly detection:
 
-### 1. **Germany + Apple Pay Friction**
-- Apple Pay transactions in Germany fail **15% more often** than other gateways
+### 1. **High Friction: Germany + Apple Pay**
+- Apple Pay transactions in Germany fail **15% more often** than baseline (~23% total)
 - Simulates authentication/regulatory friction
-- **Observable**: `23%` failure rate (Apple/DE) vs `8%` baseline
+- **Observable**: Detected as "High Friction" (>10% variance from baseline)
 
-### 2. **Crypto Cohort Privacy**
+### 2. **Medium Friction: France + Stripe**
+- Stripe transactions in France fail **9% more often** than baseline (~17% total)
+- Simulates moderate payment authentication issues
+- **Observable**: Detected as "Medium Friction" (5-10% variance from baseline)
+
+### 3. **Crypto Cohort Privacy**
 - Bitcoin/Lightning transactions have **NULL country** data (privacy)
 - Unique error patterns: `underpayment`, not traditional declines
 - **0% chargeback rate** (irreversible transactions)
 
-### 3. **Black Friday Seasonality**
+### 4. **Black Friday Seasonality**
 - **3x signup spike** in November (simulating Black Friday promo)
 - Cohorts churn at **2x rate** 3 months later
 - **Observable**: 40% churn for Nov signups vs 20% baseline
@@ -139,19 +144,21 @@ All analytics use **SQL-first approach** (no pandas `.groupby()`) with optimized
 ## 🎨 Dashboard Features
 
 ### 1. Executive Overview
-- High-level KPIs: MRR, Active Subscribers, NRR
-- Revenue trends with month-over-month growth
-- Top countries and plans by revenue
+- **High-level KPIs with time context**: MRR (Current), Active Subs (Current), Auth Rate (L30D), Churn Rate (MTD), Avg Tx Value (All-Time)
+- Monthly churn and retention trends
+- Professional Metabase-style design with Proton brand colors
 
-### 2. Friction Monitor (Sankey Diagram)
-- Visual flow: **Attempt → Gateway → Auth → Settlement**
-- Filterable by country, gateway, time period
-- Identifies drop-off points in payment flow
+### 2. Friction Monitor
+- **Sankey Diagram**: Visual flow of Attempt → Gateway → Auth → Settlement
+- **Three-tier friction detection**: High (>10% variance), Medium (5-10% variance), Low (<5% variance)
+- Filterable by region with detailed variance analysis
+- Common error pattern identification
 
-### 3. Unit Economics
-- **Cohort retention heatmap** (12-month window)
-- LTV:CAC analysis by acquisition channel
-- Payback period tracking
+### 3. Cohort Analysis
+- **12-month retention heatmap** with Proton purple gradient
+- Key insights: Month 1, Month 6, and Month 12 average retention
+- Best/worst cohort performance tracking
+- Revenue reconciliation (cash collected vs booked revenue)
 
 ---
 

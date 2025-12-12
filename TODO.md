@@ -13,9 +13,10 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
   - [x] Implement `users` table generation
   - [x] Implement `subscriptions` table generation  
   - [x] Implement `transactions` table generation
-  - [x] Inject Pattern #1: Germany/Apple Pay Friction (15% higher failure rate)
-  - [x] Inject Pattern #2: Crypto Cohort (NULL country, 0% chargeback, underpayment errors)
-  - [x] Inject Pattern #3: Black Friday Seasonality (November spike + 3-month churn)
+  - [x] Inject Pattern #1: High Friction - Germany/Apple Pay (15% higher failure, >10% variance)
+  - [x] Inject Pattern #2: Medium Friction - France/Stripe (9% higher failure, 5-10% variance)
+  - [x] Inject Pattern #3: Crypto Cohort (NULL country, 0% chargeback, underpayment errors)
+  - [x] Inject Pattern #4: Black Friday Seasonality (November spike + 3-month churn)
   - [x] Export to CSV files
 
 ### Small Tasks
@@ -91,6 +92,11 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 - [x] Fix broken placeholder image in sidebar
 - [x] Update chart colors (purple gradient for retention)
 - [x] Improve typography and spacing
+- [x] Remove all emojis from dashboard (professional UX)
+- [x] Add time frame context to Executive Overview metrics
+- [x] Implement st.column_config for professional table styling
+- [x] Add three-tier friction detection (High/Medium/Low)
+- [x] Add 12-month average retention metric to Cohort Analysis
 
 ---
 
@@ -152,13 +158,16 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 ---
 
 ## 📊 SUCCESS METRICS
-- [x] **155,276 transactions** generated (15K users, 18.6K subscriptions)
-- [x] **All 3 injected patterns** detectable in analytics:
-  - ✅ Germany/Apple Pay: 77.7% acceptance vs 91.2% baseline (-13.5%)
-  - ✅ Bitcoin privacy: 100% NULL countries, 15,621 transactions
+- [x] **155,518 transactions** generated (15K users, 18.6K subscriptions)
+- [x] **All 4 injected patterns** detectable in analytics:
+  - ✅ High Friction (Germany/Apple Pay): 77.6% acceptance vs 90.5% baseline (-12.9%)
+  - ✅ Medium Friction (France/Stripe): 83.1% acceptance vs 90.5% baseline (-7.4%)
+  - ✅ Bitcoin privacy: 100% NULL countries, 15,381 transactions
   - ✅ Black Friday churn: November cohorts 19.7% vs 14.9% baseline (+4.8%)
 - [x] **Dashboard loads in ~4 seconds** (50% faster after optimization)
+- [x] **Three-tier friction detection** (High/Medium/Low with proper thresholds)
 - [x] **Sankey diagram** clearly shows payment friction with country filters
+- [x] **Professional UX**: Zero emojis, time-contextualized metrics, Metabase-style tables
 - [x] **Production-grade code**:
   - ✅ Ruff linted (zero errors)
   - ✅ Type hinted

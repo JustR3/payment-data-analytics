@@ -312,9 +312,9 @@ class PaymentAnalytics:
             ROUND(g.acceptance_rate - (b.overall_acceptance_rate * 100), 2) as variance_from_baseline,
             g.common_errors,
             CASE 
-                WHEN g.acceptance_rate < (b.overall_acceptance_rate * 100 - 10) THEN '🔴 High Friction'
-                WHEN g.acceptance_rate < (b.overall_acceptance_rate * 100 - 5) THEN '🟡 Medium Friction'
-                ELSE '🟢 Normal'
+                WHEN g.acceptance_rate < (b.overall_acceptance_rate * 100 - 10) THEN 'High Friction'
+                WHEN g.acceptance_rate < (b.overall_acceptance_rate * 100 - 5) THEN 'Medium Friction'
+                ELSE 'Low Friction'
             END as friction_flag
         FROM gateway_country_stats g, baseline_acceptance b
         ORDER BY variance_from_baseline ASC, attempts DESC

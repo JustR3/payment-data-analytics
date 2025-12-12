@@ -5,9 +5,10 @@ This module generates realistic subscription payment data with injected patterns
 for analytics demonstration. Specifically designed for Proton-style payment analysis.
 
 Injected Patterns:
-1. Germany/Apple Pay Friction: Apple Pay transactions in Germany fail 15% more often
-2. Crypto Cohort: Bitcoin transactions have NULL country (privacy) and unique error patterns
-3. Black Friday Seasonality: November signup spike with 3-month delayed churn
+1. High Friction (Germany/Apple Pay): Apple Pay in Germany fails 15% more (>10% variance)
+2. Medium Friction (France/Stripe): Stripe in France fails 9% more (5-10% variance)
+3. Crypto Cohort: Bitcoin transactions have NULL country (privacy) and unique error patterns
+4. Black Friday Seasonality: November signup spike with 3-month delayed churn
 
 Author: Data Engineering Portfolio
 Date: December 2025
@@ -175,8 +176,9 @@ class PaymentDataGenerator:
         Determine if transaction should fail based on injected patterns.
 
         Pattern Injections:
-        1. Apple Pay in Germany: 15% higher failure rate
-        2. Bitcoin: Different error patterns (underpayment, not declines)
+        1. Apple Pay in Germany: 15% higher failure rate (HIGH friction)
+        2. Stripe in France: 7% higher failure rate (MEDIUM friction)
+        3. Bitcoin: Different error patterns (underpayment, not declines)
 
         Args:
             gateway: Payment gateway name
@@ -187,7 +189,7 @@ class PaymentDataGenerator:
         """
         base_failure_rate = 0.08  # 8% baseline
 
-        # PATTERN 1: Germany + Apple Pay friction
+        # PATTERN 1: Germany + Apple Pay friction (HIGH - >10% variance)
         if gateway == "Apple Pay" and country == "DE":
             failure_rate = base_failure_rate + 0.15  # 23% total failure rate
             if random.random() < failure_rate:
@@ -195,6 +197,17 @@ class PaymentDataGenerator:
                 error_code = random.choices(
                     ["authentication_failed", "card_declined", "fraud_detected"],
                     weights=[0.5, 0.3, 0.2],
+                )[0]
+                return True, error_code
+
+        # PATTERN 1.5: France + Stripe friction (MEDIUM - 5-10% variance)
+        elif gateway == "Stripe" and country == "FR":
+            failure_rate = base_failure_rate + 0.09  # 17% total failure rate (~7% variance)
+            if random.random() < failure_rate:
+                # Moderate card authentication issues in France
+                error_code = random.choices(
+                    ["card_declined", "authentication_failed", "insufficient_funds"],
+                    weights=[0.4, 0.3, 0.3],
                 )[0]
                 return True, error_code
 

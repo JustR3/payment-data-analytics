@@ -231,7 +231,7 @@ def render_executive_overview(analytics):
 
     with col1:
         st.metric(
-            label="MRR",
+            label="MRR (Current)",
             value=f"${metrics['mrr']:,.0f}",
             delta="+1.2%",
             help="Monthly Recurring Revenue from active subscriptions",
@@ -239,7 +239,7 @@ def render_executive_overview(analytics):
 
     with col2:
         st.metric(
-            label="Active Subs",
+            label="Active Subs (Current)",
             value=f"{metrics['active_subscriptions']:,}",
             delta="+24",
             help="Number of active subscribers",
@@ -247,7 +247,7 @@ def render_executive_overview(analytics):
 
     with col3:
         st.metric(
-            label="Auth Rate",
+            label="Auth Rate (L30D)",
             value=f"{metrics['payment_success_rate']:.1f}%",
             delta=f"{metrics['payment_success_rate'] - 90:.1f}%",
             delta_color="normal" if metrics["payment_success_rate"] >= 90 else "inverse",
@@ -258,18 +258,18 @@ def render_executive_overview(analytics):
         # Fix churn to show 2 decimals for precision
         churn_display = f"{metrics['churn_rate']:.2f}%" if metrics['churn_rate'] > 0 else "0.04%"
         st.metric(
-            label="Churn Rate",
+            label="Churn Rate (MTD)",
             value=churn_display,
             delta="-0.02%",
             delta_color="inverse",
-            help="Monthly churn rate (inverse: down is good)",
+            help="Month-to-date churn rate for current cohort (inverse: down is good)",
         )
 
     with col5:
         st.metric(
-            label="Avg Tx Value",
+            label="Avg Tx Value (All-Time)",
             value=f"${metrics['avg_transaction_value']:.2f}",
-            help="Average successful transaction amount",
+            help="Average successful transaction amount (all-time)",
         )
 
     st.markdown("---")
@@ -474,14 +474,17 @@ def render_friction_monitor(analytics):
     friction_df = get_friction_data(analytics)
 
     if not friction_df.empty:
-        # Filter to show problematic ones first
-        problematic = friction_df[friction_df["friction_flag"] != "🟢 Normal"]
+        # Show all friction levels in separate sections
+        high_friction = friction_df[friction_df["friction_flag"] == "High Friction"]
+        medium_friction = friction_df[friction_df["friction_flag"] == "Medium Friction"]
+        low_friction = friction_df[friction_df["friction_flag"] == "Low Friction"]
 
-        if not problematic.empty:
-            st.warning(f"Found {len(problematic)} gateway/region pairs with elevated friction")
+        # High Friction (critical issues)
+        if not high_friction.empty:
+            st.error(f"⚠️ {len(high_friction)} gateway/region pairs with HIGH friction (>10% below baseline)")
 
             st.dataframe(
-                problematic[[
+                high_friction[[
                     "gateway",
                     "country",
                     "attempts",
@@ -518,34 +521,91 @@ def render_friction_monitor(analytics):
                     "friction_flag": "Status",
                 },
             )
-        else:
-            st.success("✅ No significant friction detected")
 
-            # Show top performers
-            st.subheader("Top Performing Pairs")
-            top_performers = friction_df.nlargest(10, "acceptance_rate_pct")
-            
+        # Medium Friction (warning zone)
+        if not medium_friction.empty:
+            st.warning(f"⚡ {len(medium_friction)} gateway/region pairs with MEDIUM friction (5-10% below baseline)")
+
             st.dataframe(
-                top_performers[[
+                medium_friction[[
                     "gateway",
                     "country",
                     "attempts",
                     "acceptance_rate_pct",
+                    "baseline_rate_pct",
+                    "variance_from_baseline",
+                    "friction_flag",
                 ]],
                 use_container_width=True,
                 hide_index=True,
                 column_config={
                     "gateway": "Gateway",
                     "country": "Region",
-                    "attempts": st.column_config.NumberColumn("Volume", format="%d"),
+                    "attempts": st.column_config.NumberColumn(
+                        "Volume",
+                        format="%d",
+                    ),
                     "acceptance_rate_pct": st.column_config.ProgressColumn(
                         "Auth Rate",
                         format="%.1f%%",
                         min_value=0,
                         max_value=100,
                     ),
+                    "baseline_rate_pct": st.column_config.NumberColumn(
+                        "Baseline",
+                        format="%.1f%%",
+                    ),
+                    "variance_from_baseline": st.column_config.NumberColumn(
+                        "Variance",
+                        format="%.1f%%",
+                    ),
+                    "friction_flag": "Status",
                 },
             )
+
+        # Low Friction (healthy performance)
+        if not low_friction.empty:
+            with st.expander(f"✅ {len(low_friction)} gateway/region pairs with LOW friction (healthy performance)", expanded=False):
+                # Show top 10 performers
+                top_performers = low_friction.nlargest(10, "acceptance_rate_pct")
+                
+                st.dataframe(
+                    top_performers[[
+                        "gateway",
+                        "country",
+                        "attempts",
+                        "acceptance_rate_pct",
+                        "variance_from_baseline",
+                    ]],
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "gateway": "Gateway",
+                        "country": "Region",
+                        "attempts": st.column_config.NumberColumn("Volume", format="%d"),
+                        "acceptance_rate_pct": st.column_config.ProgressColumn(
+                            "Auth Rate",
+                            format="%.1f%%",
+                            min_value=0,
+                            max_value=100,
+                        ),
+                        "variance_from_baseline": st.column_config.NumberColumn(
+                            "Variance",
+                            format="%.1f%%",
+                        ),
+                    },
+                )
+        
+        # Summary metrics
+        st.markdown("---")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("High Friction", len(high_friction), delta=f"{len(high_friction)}", delta_color="inverse")
+        with col2:
+            st.metric("Medium Friction", len(medium_friction), delta=f"{len(medium_friction)}", delta_color="off")
+        with col3:
+            st.metric("Low Friction", len(low_friction), delta=f"{len(low_friction)}", delta_color="normal")
 
 
 def render_unit_economics(analytics):
@@ -617,7 +677,7 @@ def render_unit_economics(analytics):
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader("📈 Key Insights")
+            st.subheader("Key Insights")
 
             # Calculate average retention at different stages
             if 1 in pivot_df.columns:
@@ -633,7 +693,7 @@ def render_unit_economics(analytics):
                 st.metric("Month 12 Avg Retention", f"{avg_month_12:.1f}%")
 
         with col2:
-            st.subheader("💡 Cohort Performance")
+            st.subheader("Cohort Performance")
 
             # Best performing cohort
             best_cohort = pivot_df.mean(axis=1).idxmax()
