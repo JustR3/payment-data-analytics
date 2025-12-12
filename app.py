@@ -510,7 +510,7 @@ def render_unit_economics(analytics):
                 text=pivot_df.values,
                 texttemplate="%{text:.1f}%",
                 textfont={"size": 10},
-                colorbar=dict(title="Retention %", titleside="right", ticksuffix="%"),
+                colorbar=dict(title="Retention %", ticksuffix="%"),
                 hovertemplate="Cohort: %{y}<br>Month %{x}<br>Retention: %{z:.1f}%<extra></extra>",
             )
         )

@@ -313,33 +313,43 @@ class PaymentAnalytics:
             DataFrame with cohort_month, months_since_signup, retention_rate
         """
         query = f"""
-        WITH cohorts AS (
+        WITH cohort_base AS (
             SELECT 
                 DATE_TRUNC('month', u.signup_date) as cohort_month,
                 u.user_id,
-                s.sub_id,
-                s.status,
-                DATE_DIFF('month', u.signup_date, CURRENT_DATE) as months_since_signup
+                u.signup_date
             FROM users u
-            JOIN subscriptions s ON u.user_id = s.user_id
         ),
         cohort_sizes AS (
             SELECT 
                 cohort_month,
                 COUNT(DISTINCT user_id) as cohort_size
-            FROM cohorts
+            FROM cohort_base
             GROUP BY cohort_month
+        ),
+        transaction_months AS (
+            SELECT DISTINCT
+                DATE_TRUNC('month', t.tx_date) as transaction_month,
+                t.user_id,
+                t.sub_id
+            FROM transactions t
+            WHERE t.status = 'Success'
         ),
         retention_by_month AS (
             SELECT 
-                c.cohort_month,
-                c.months_since_signup,
-                COUNT(DISTINCT CASE WHEN c.status = 'Active' THEN c.user_id END) as retained_users,
+                cb.cohort_month,
+                DATE_DIFF('month', cb.cohort_month, tm.transaction_month) as months_since_signup,
+                COUNT(DISTINCT cb.user_id) as retained_users,
                 cs.cohort_size
-            FROM cohorts c
-            JOIN cohort_sizes cs ON c.cohort_month = cs.cohort_month
-            WHERE c.months_since_signup <= 12
-            GROUP BY c.cohort_month, c.months_since_signup, cs.cohort_size
+            FROM cohort_base cb
+            CROSS JOIN (SELECT DISTINCT transaction_month FROM transaction_months) tm
+            LEFT JOIN transaction_months t 
+                ON cb.user_id = t.user_id 
+                AND tm.transaction_month = t.transaction_month
+            JOIN cohort_sizes cs ON cb.cohort_month = cs.cohort_month
+            WHERE DATE_DIFF('month', cb.cohort_month, tm.transaction_month) >= 0
+                AND DATE_DIFF('month', cb.cohort_month, tm.transaction_month) <= 12
+            GROUP BY cb.cohort_month, tm.transaction_month, cs.cohort_size
         )
         SELECT 
             cohort_month,
@@ -349,6 +359,7 @@ class PaymentAnalytics:
             ROUND(retained_users::DECIMAL / cohort_size * 100, 1) as retention_rate_pct
         FROM retention_by_month
         WHERE cohort_month >= CURRENT_DATE - INTERVAL '{cohort_months} months'
+            AND retained_users > 0
         ORDER BY cohort_month, months_since_signup
         """
 
