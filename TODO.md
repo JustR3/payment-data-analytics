@@ -30,20 +30,20 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 ## 📋 PHASE 2: ANALYTICS & SQL
 
 ### Big Tasks
-- [ ] **Build `etl_logic.py`**
-  - [ ] Set up DuckDB connection and schema
-  - [ ] Query: `calculate_monthly_churn_rate()`
-  - [ ] Query: `payment_acceptance_rate_by_gateway()`
-  - [ ] Query: `revenue_reconciliation()` (Cash vs. Booked)
-  - [ ] Query: Detect Germany/Apple Pay friction pattern
-  - [ ] Query: Cohort retention analysis
+- [x] **Build `etl_logic.py`**
+  - [x] Set up DuckDB connection and schema
+  - [x] Query: `calculate_monthly_churn_rate()`
+  - [x] Query: `payment_acceptance_rate_by_gateway()`
+  - [x] Query: `revenue_reconciliation()` (Cash vs. Booked)
+  - [x] Query: Detect Germany/Apple Pay friction pattern
+  - [x] Query: Cohort retention analysis
 
 ### Small Tasks
-- [ ] Add SQL query documentation
-- [ ] Implement connection pooling/cleanup
-- [ ] Add query performance logging
-- [ ] Create helper function for loading CSVs into DuckDB
-- [ ] Add data validation checks
+- [x] Add SQL query documentation
+- [x] Implement connection pooling/cleanup
+- [x] Add query performance logging
+- [x] Create helper function for loading CSVs into DuckDB
+- [x] Add data validation checks
 
 ---
 

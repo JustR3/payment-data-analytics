@@ -9,5 +9,6 @@ __version__ = "0.1.0"
 __author__ = "Data Engineering Portfolio"
 
 from .data_generator import PaymentDataGenerator
+from .etl_logic import PaymentAnalytics
 
-__all__ = ["PaymentDataGenerator"]
+__all__ = ["PaymentDataGenerator", "PaymentAnalytics"]
