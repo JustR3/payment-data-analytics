@@ -227,7 +227,7 @@ class PaymentDataGenerator:
                 error_code = random.choice(["insufficient_funds", "card_declined", "expired_card"])
                 return True, error_code
 
-        return False, None
+        return False, ""
 
     def generate_transactions(
         self, subscriptions_df: pd.DataFrame, users_df: pd.DataFrame, transactions_per_sub: int = 12
