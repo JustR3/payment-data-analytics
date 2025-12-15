@@ -177,7 +177,11 @@ class PaymentAnalytics:
             DataFrame with columns: gateway, country, attempts, success, acceptance_rate
         """
         query = f"""
-        WITH gateway_stats AS (
+        WITH date_range AS (
+            SELECT MAX(tx_date) - INTERVAL '90 days' as min_date
+            FROM transactions
+        ),
+        gateway_stats AS (
             SELECT 
                 gateway,
                 COALESCE(country, 'Unknown') as country,
@@ -185,8 +189,8 @@ class PaymentAnalytics:
                 SUM(CASE WHEN status = 'Success' THEN 1 ELSE 0 END) as successful_txs,
                 SUM(CASE WHEN status = 'Soft Decline' THEN 1 ELSE 0 END) as soft_declines,
                 SUM(CASE WHEN status = 'Hard Decline' THEN 1 ELSE 0 END) as hard_declines
-            FROM transactions
-            WHERE tx_date >= CURRENT_DATE - INTERVAL '90 days'
+            FROM transactions, date_range
+            WHERE tx_date >= date_range.min_date
             GROUP BY gateway, country
             HAVING COUNT(*) >= {min_transactions}
         )
@@ -284,10 +288,15 @@ class PaymentAnalytics:
             DataFrame with gateway friction analysis and anomaly flags
         """
         query = """
-        WITH baseline_acceptance AS (
+        WITH date_range AS (
+            SELECT MAX(tx_date) - INTERVAL '90 days' as min_date
+            FROM transactions
+        ),
+        baseline_acceptance AS (
             SELECT 
                 AVG(CASE WHEN status = 'Success' THEN 1.0 ELSE 0.0 END) as overall_acceptance_rate
-            FROM transactions
+            FROM transactions, date_range
+            WHERE tx_date >= date_range.min_date
         ),
         gateway_country_stats AS (
             SELECT 
@@ -296,9 +305,21 @@ class PaymentAnalytics:
                 COUNT(*) as attempts,
                 SUM(CASE WHEN status = 'Success' THEN 1 ELSE 0 END) as successes,
                 ROUND(SUM(CASE WHEN status = 'Success' THEN 1 ELSE 0 END)::DECIMAL / COUNT(*) * 100, 2) as acceptance_rate,
-                STRING_AGG(DISTINCT error_code, ', ') as common_errors
-            FROM transactions
-            WHERE tx_date >= CURRENT_DATE - INTERVAL '90 days'
+                (
+                    SELECT STRING_AGG(error_code, ', ')
+                    FROM (
+                        SELECT error_code, COUNT(*) as cnt
+                        FROM transactions t2
+                        WHERE t2.gateway = t1.gateway 
+                            AND COALESCE(t2.country, 'Unknown') = COALESCE(t1.country, 'Unknown')
+                            AND t2.status != 'Success'
+                        GROUP BY error_code
+                        ORDER BY cnt DESC
+                        LIMIT 3
+                    )
+                ) as common_errors
+            FROM transactions t1, date_range
+            WHERE t1.tx_date >= date_range.min_date
             GROUP BY gateway, country
             HAVING COUNT(*) >= 50  -- Statistical significance
         )
@@ -406,14 +427,18 @@ class PaymentAnalytics:
         metrics["mrr"] = float(mrr_result[0]) if mrr_result[0] else 0
         metrics["active_subscriptions"] = int(mrr_result[1]) if mrr_result[1] else 0
 
-        # Payment success rate (last 30 days)
+        # Payment success rate (last 30 days from most recent data)
         success_rate = self.conn.execute("""
+            WITH date_range AS (
+                SELECT MAX(tx_date) - INTERVAL '30 days' as min_date
+                FROM transactions
+            )
             SELECT 
                 ROUND(SUM(CASE WHEN status = 'Success' THEN 1 ELSE 0 END)::DECIMAL / COUNT(*) * 100, 2) as success_rate
-            FROM transactions
-            WHERE tx_date >= CURRENT_DATE - INTERVAL '30 days'
+            FROM transactions, date_range
+            WHERE tx_date >= date_range.min_date
         """).fetchone()
-        metrics["payment_success_rate"] = float(success_rate[0]) if success_rate[0] else 0
+        metrics["payment_success_rate"] = float(success_rate[0]) if success_rate[0] is not None else 0
 
         # Total revenue (all time)
         total_revenue = self.conn.execute("""
@@ -421,26 +446,31 @@ class PaymentAnalytics:
             FROM transactions
             WHERE status = 'Success'
         """).fetchone()
-        metrics["total_revenue"] = float(total_revenue[0]) if total_revenue[0] else 0
+        metrics["total_revenue"] = float(total_revenue[0]) if total_revenue[0] is not None else 0
 
-        # Churn rate (current month)
+        # Churn rate (most recent complete month)
         churn_rate = self.conn.execute("""
-            WITH current_month_cohort AS (
-                SELECT COUNT(*) as total_subs
-                FROM subscriptions
-                WHERE DATE_TRUNC('month', start_date) = DATE_TRUNC('month', CURRENT_DATE)
+            WITH latest_complete_month AS (
+                SELECT DATE_TRUNC('month', MAX(tx_date)) - INTERVAL '1 month' as target_month
+                FROM transactions
             ),
-            churned_this_month AS (
+            month_start_subs AS (
+                SELECT COUNT(*) as total_subs
+                FROM subscriptions s, latest_complete_month m
+                WHERE s.start_date <= m.target_month
+                    AND s.status IN ('Active', 'Churned', 'Past Due')
+            ),
+            month_churned AS (
                 SELECT COUNT(*) as churned
-                FROM subscriptions
-                WHERE status = 'Churned'
-                AND DATE_TRUNC('month', start_date) = DATE_TRUNC('month', CURRENT_DATE)
+                FROM subscriptions s, latest_complete_month m
+                WHERE s.status = 'Churned'
+                    AND s.start_date <= m.target_month
             )
             SELECT 
                 ROUND(c.churned::DECIMAL / NULLIF(t.total_subs, 0) * 100, 2) as churn_rate
-            FROM churned_this_month c, current_month_cohort t
+            FROM month_churned c, month_start_subs t
         """).fetchone()
-        metrics["churn_rate"] = float(churn_rate[0]) if churn_rate[0] and churn_rate[0] else 0
+        metrics["churn_rate"] = float(churn_rate[0]) if churn_rate[0] is not None else 0
 
         # Average transaction value
         avg_tx_value = self.conn.execute("""
@@ -517,6 +547,14 @@ class PaymentAnalytics:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.close()
+
+    def __del__(self):
+        """Cleanup on garbage collection."""
+        if hasattr(self, 'conn') and self.conn:
+            try:
+                self.conn.close()
+            except Exception:
+                pass  # Silently ignore cleanup errors
 
 
 def validate_synthetic_patterns(analytics: PaymentAnalytics) -> None:

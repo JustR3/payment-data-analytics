@@ -170,6 +170,7 @@ def load_analytics():
         PaymentAnalytics instance with data loaded
     """
     data_dir = "./data"
+    lock_file = os.path.join(data_dir, ".generation_complete")
     
     # Check if data exists
     data_files = [
@@ -178,17 +179,31 @@ def load_analytics():
         os.path.join(data_dir, "transactions.csv"),
     ]
     
-    if not all(os.path.exists(f) for f in data_files):
-        st.info("🔄 Generating synthetic data (first run, ~30 seconds)...")
-        
-        # Import and run data generator
-        from payment_intelligence.data_generator import PaymentDataGenerator
-        
-        os.makedirs(data_dir, exist_ok=True)
-        generator = PaymentDataGenerator(num_users=15000)
-        generator.generate_all_data(output_dir=data_dir)
-        
-        st.success("✅ Data generated successfully!")
+    # Race condition protection - check for lock file first
+    if not os.path.exists(lock_file):
+        if not all(os.path.exists(f) for f in data_files):
+            st.info("🔄 Generating synthetic data (first run, ~30 seconds)...")
+            
+            try:
+                # Import and run data generator
+                from payment_intelligence.data_generator import PaymentDataGenerator
+                
+                os.makedirs(data_dir, exist_ok=True)
+                generator = PaymentDataGenerator(num_users=15000)
+                generator.generate_all_data(output_dir=data_dir)
+                
+                # Create lock file to prevent re-generation
+                with open(lock_file, 'w') as f:
+                    f.write("Data generation completed successfully")
+                
+                st.success("✅ Data generated successfully!")
+            except Exception as e:
+                st.error(f"❌ Data generation failed: {str(e)}")
+                # Clean up partial files
+                for f in data_files:
+                    if os.path.exists(f):
+                        os.remove(f)
+                raise
     
     analytics = PaymentAnalytics(data_dir=data_dir)
     analytics.load_data()
@@ -278,14 +293,14 @@ def render_executive_overview(analytics):
         )
 
     with col4:
-        # Fix churn to show 2 decimals for precision
-        churn_display = f"{metrics['churn_rate']:.2f}%" if metrics['churn_rate'] > 0 else "0.04%"
+        # Display churn rate with proper precision
+        churn_display = f"{metrics['churn_rate']:.2f}%"
         st.metric(
-            label="Churn Rate (MTD)",
+            label="Churn Rate (Last Mo)",
             value=churn_display,
             delta="-0.02%",
             delta_color="inverse",
-            help="Month-to-date churn rate for current cohort (inverse: down is good)",
+            help="Churn rate from most recent complete month (inverse: down is good)",
         )
 
     with col5:
@@ -828,25 +843,13 @@ def main():
         elif page == "Cohort Analysis":
             render_unit_economics(analytics)
 
-    except FileNotFoundError:
-        st.error("""
-        ### ❌ Data Not Found
-        
-        Please generate synthetic data first:
-        
-        ```bash
-        uv run python scripts/generate_data.py
-        ```
-        """)
     except Exception as e:
         st.error(f"""
         ### ❌ Error Loading Dashboard
         
         {str(e)}
         
-        Please ensure:
-        1. Data has been generated
-        2. All dependencies are installed (`uv sync`)
+        Please ensure all dependencies are installed (`uv sync`) or try refreshing the data.
         """)
 
         if st.checkbox("Show error details"):
