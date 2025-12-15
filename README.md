@@ -127,26 +127,30 @@ payment-data-analytics/
 
 The data generator injects **5 realistic patterns** to demonstrate anomaly detection capabilities:
 
-### 1. **Payment Gateway Friction (Regional)**
-Two distinct friction patterns:
-- **Germany + Apple Pay**: 15% higher failure rate (High friction, >10% variance)
-- **France + PayPal**: 9% higher failure rate (Medium friction, 5-10% variance)
-- Simulates authentication/regulatory friction (e.g., SCA requirements in EU)
-- **Detection**: Three-tier classification (High >10%, Medium 5-10%, Low <5% variance)
-- **Note**: Specific variance values may fluctuate with dataset size due to statistical sampling
+### 1. **High Friction Gateway Pattern** (Germany + Apple Pay)
+- **15% higher failure rate** than baseline (High friction, >10% variance)
+- Simulates Strong Customer Authentication (SCA) requirements in EU
+- Common errors: `authentication_failed`, `card_declined`, `fraud_detected`
+- **Detection**: Flagged as "High Friction" in dashboard
 
-### 2. **Crypto Payment Privacy**
+### 2. **Medium Friction Gateway Pattern** (France + PayPal)
+- **9% higher failure rate** than baseline (Medium friction, 5-10% variance)
+- Simulates regional payment authentication issues
+- Common errors: `card_declined`, `authentication_failed`, `insufficient_funds`
+- **Detection**: Flagged as "Medium Friction" in dashboard
+
+### 3. **Crypto Payment Privacy**
 - Bitcoin transactions have **NULL country** data (privacy-first approach)
 - Unique error patterns: `underpayment`, not traditional card declines
 - **0% chargeback rate** (irreversible cryptocurrency transactions)
 - **Observable**: 100% NULL country for Bitcoin gateway
 
-### 3. **Black Friday Seasonality**
+### 4. **Black Friday Seasonality**
 - **3x signup spike** in November (simulating promotional campaigns)
 - November cohorts show **higher churn rates** 3 months later
 - **Observable**: Elevated November signups vs monthly baseline
 
-### 4. **Multi-Gateway Distribution**
+### 5. **Multi-Gateway Distribution**
 - Realistic payment method distribution across Stripe, PayPal, Apple Pay, Bitcoin
 - Geography-based payment preferences (e.g., higher PayPal usage in Europe)
 - **Observable**: Varied transaction volumes across gateway/region pairs
