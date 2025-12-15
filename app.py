@@ -182,10 +182,10 @@ def load_analytics():
         st.info("🔄 Generating synthetic data (first run, ~30 seconds)...")
         
         # Import and run data generator
-        from payment_intelligence.data_generator import DataGenerator
+        from payment_intelligence.data_generator import PaymentDataGenerator
         
         os.makedirs(data_dir, exist_ok=True)
-        generator = DataGenerator(num_users=15000, output_dir=data_dir)
+        generator = PaymentDataGenerator(num_users=15000, output_dir=data_dir)
         generator.generate_all()
         
         st.success("✅ Data generated successfully!")
