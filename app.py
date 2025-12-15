@@ -13,6 +13,7 @@ Author: Data Engineering Portfolio
 Date: December 2025
 """
 
+import os
 import streamlit as st
 import plotly.graph_objects as go
 
@@ -163,11 +164,33 @@ st.markdown(
 def load_analytics():
     """
     Load analytics engine with caching.
+    Auto-generates data if not present (for Streamlit Cloud deployment).
 
     Returns:
         PaymentAnalytics instance with data loaded
     """
-    analytics = PaymentAnalytics(data_dir="./data")
+    data_dir = "./data"
+    
+    # Check if data exists
+    data_files = [
+        os.path.join(data_dir, "users.csv"),
+        os.path.join(data_dir, "subscriptions.csv"),
+        os.path.join(data_dir, "transactions.csv"),
+    ]
+    
+    if not all(os.path.exists(f) for f in data_files):
+        st.info("🔄 Generating synthetic data (first run, ~30 seconds)...")
+        
+        # Import and run data generator
+        from payment_intelligence.data_generator import DataGenerator
+        
+        os.makedirs(data_dir, exist_ok=True)
+        generator = DataGenerator(num_users=15000, output_dir=data_dir)
+        generator.generate_all()
+        
+        st.success("✅ Data generated successfully!")
+    
+    analytics = PaymentAnalytics(data_dir=data_dir)
     analytics.load_data()
     return analytics
 
