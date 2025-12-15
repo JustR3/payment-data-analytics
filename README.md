@@ -111,27 +111,29 @@ payment-data-analytics/
 
 ## 🎲 Synthetic Data Patterns
 
-The data generator includes **4 injected patterns** for realistic anomaly detection:
+The data generator injects **4 realistic patterns** to demonstrate anomaly detection capabilities:
 
-### 1. **High Friction: Germany + Apple Pay**
-- Apple Pay transactions in Germany fail **15% more often** than baseline (~23% total)
-- Simulates authentication/regulatory friction
-- **Observable**: Detected as "High Friction" (>10% variance from baseline)
+### 1. **Payment Gateway Friction (Regional)**
+- Certain gateway/country combinations have **higher failure rates** than baseline
+- Simulates authentication/regulatory friction (e.g., SCA requirements in EU)
+- **Detection**: Three-tier classification (High >10%, Medium 5-10%, Low <5% variance)
+- **Note**: Specific gateways flagged vary with dataset size due to statistical variance
 
-### 2. **Medium Friction: France + PayPal**
-- PayPal transactions in France fail **9% more often** than baseline (~17% total)
-- Simulates moderate payment authentication issues
-- **Observable**: Detected as "Medium Friction" (5-10% variance from baseline)
+### 2. **Crypto Payment Privacy**
+- Bitcoin transactions have **NULL country** data (privacy-first approach)
+- Unique error patterns: `underpayment`, not traditional card declines
+- **0% chargeback rate** (irreversible cryptocurrency transactions)
+- **Observable**: 100% NULL country for Bitcoin gateway
 
-### 3. **Crypto Cohort Privacy**
-- Bitcoin/Lightning transactions have **NULL country** data (privacy)
-- Unique error patterns: `underpayment`, not traditional declines
-- **0% chargeback rate** (irreversible transactions)
+### 3. **Black Friday Seasonality**
+- **3x signup spike** in November (simulating promotional campaigns)
+- November cohorts show **higher churn rates** 3 months later
+- **Observable**: Elevated November signups vs monthly baseline
 
-### 4. **Black Friday Seasonality**
-- **3x signup spike** in November (simulating Black Friday promo)
-- Cohorts churn at **2x rate** 3 months later
-- **Observable**: 40% churn for Nov signups vs 20% baseline
+### 4. **Multi-Gateway Distribution**
+- Realistic payment method distribution across Stripe, PayPal, Apple Pay, Bitcoin
+- Geography-based payment preferences (e.g., higher PayPal usage in Europe)
+- **Observable**: Varied transaction volumes across gateway/region pairs
 
 ---
 
@@ -149,7 +151,7 @@ All analytics use **SQL-first approach** (no pandas `.groupby()`) with optimized
 - `calculate_monthly_churn_rate()` - Cohort retention tracking
 - `payment_acceptance_rate_by_gateway()` - Gateway performance with baseline comparison
 - `revenue_reconciliation()` - Cash vs accrual reconciliation (optimized UNION ALL)
-- `detect_gateway_friction()` - Anomaly detection with statistical significance (detects DE + Apple Pay)
+- `detect_gateway_friction()` - Anomaly detection with statistical significance across gateway/region pairs
 - `cohort_retention_analysis()` - 12-month retention heatmap (fixed logic, 75% faster)
 - `get_sankey_data()` - Payment flow visualization with secure parameterization
 
