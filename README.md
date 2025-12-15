@@ -36,23 +36,34 @@ Comprehensive payment analytics platform demonstrating:
 
 ## 🏗️ Architecture
 
+**Data Pipeline Flow** (bottom-up):
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Streamlit Dashboard                      │
-│  (Executive Overview | Friction Monitor | Unit Economics)   │
+│              Synthetic Data Generator                       │
+│  (Realistic patterns: geography friction, crypto privacy,   │
+│   seasonality, churn cohorts)                               │
 └─────────────────────┬───────────────────────────────────────┘
+                      │
+                      ▼ CSVs (users, subscriptions, transactions)
                       │
 ┌─────────────────────▼───────────────────────────────────────┐
 │                   DuckDB Analytics Layer                    │
 │    (SQL-first analytics, no pandas aggregations)            │
 └─────────────────────┬───────────────────────────────────────┘
                       │
+                      ▼ DataFrames (metrics, friction, cohorts)
+                      │
 ┌─────────────────────▼───────────────────────────────────────┐
-│              Synthetic Data Generator                       │
-│  (Realistic patterns: geography friction, crypto privacy,   │
-│   seasonality, churn cohorts)                               │
+│                    Streamlit Dashboard                      │
+│  (Executive Overview | Friction Monitor | Cohort Analysis)  │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+**Layer Responsibilities**:
+1. **Data Generator** - Creates synthetic datasets with injected patterns
+2. **Analytics Layer** - Transforms raw data into business metrics via SQL
+3. **Dashboard** - Visualizes insights with interactive charts and tables
 
 ---
 
