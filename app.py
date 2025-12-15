@@ -188,15 +188,30 @@ def load_analytics():
                 # Import and run data generator
                 from payment_intelligence.data_generator import PaymentDataGenerator
                 
+                # Use smaller dataset for Streamlit Cloud (faster cold starts)
+                # Check if running on Streamlit Cloud
+                is_cloud = os.getenv('STREAMLIT_SHARING_MODE') is not None or \
+                           os.getenv('STREAMLIT_RUNTIME_ENV') == 'cloud'
+                
+                num_users = 5000 if is_cloud else 15000
+                
+                progress_text = f"Generating {num_users:,} users (~{num_users * 10:,} transactions)..."
+                progress_bar = st.progress(0, text=progress_text)
+                
                 os.makedirs(data_dir, exist_ok=True)
-                generator = PaymentDataGenerator(num_users=15000)
+                generator = PaymentDataGenerator(num_users=num_users)
+                
+                progress_bar.progress(30, text="Generating users...")
                 generator.generate_all_data(output_dir=data_dir)
+                
+                progress_bar.progress(100, text="Data generation complete!")
                 
                 # Create lock file to prevent re-generation
                 with open(lock_file, 'w') as f:
-                    f.write("Data generation completed successfully")
+                    f.write(f"Data generation completed: {num_users} users")
                 
-                st.success("✅ Data generated successfully!")
+                st.success(f"✅ Generated {num_users:,} users successfully!")
+                progress_bar.empty()
             except Exception as e:
                 st.error(f"❌ Data generation failed: {str(e)}")
                 # Clean up partial files
