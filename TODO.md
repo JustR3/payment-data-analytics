@@ -100,22 +100,23 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 
 ---
 
-## 📋 PHASE 4: DEPLOYMENT & POLISH
+## 📋 PHASE 4: DEPLOYMENT & POLISH ✅ COMPLETE
 
 ### Big Tasks
 - [x] Create comprehensive README.md
 - [x] Set up project dependencies (pyproject.toml with UV)
-- [ ] Deploy to Streamlit Cloud
-- [ ] Create demo video/GIF
-
-### Small Tasks
+- [x] Deploy to Streamlit Cloud (https://data-payment-analysis.streamlit.app/)
 - [x] Add .gitignore
 - [x] Document installation steps
-- [ ] Add environment variable support
-- [ ] Create sample data for quick demo
+- [x] Create sample data for demo (2,500 users pre-committed)
 - [x] Add error handling and logging
+
+### Outstanding Tasks
+- [ ] Create demo video/GIF for README
+- [ ] Add environment variable support
 - [ ] Write unit tests for key functions
-- [ ] Add performance benchmarks
+- [ ] Add performance benchmarks documentation
+- [ ] Add export to PDF/CSV functionality from dashboard
 
 ---
 
@@ -146,25 +147,28 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 
 ## 🚀 NEXT STEPS
 1. ✅ Complete `data_generator.py` with all injected patterns
-2. ✅ Run data generation and validate CSV outputs (155K transactions)
+2. ✅ Run data generation and validate CSV outputs (25K transactions)
 3. ✅ Build `etl_logic.py` and validate pattern detection
 4. ✅ Build Streamlit dashboard incrementally
 5. ✅ Optimize performance (75% faster cohort retention)
 6. ✅ Apply Proton brand styling
-7. 🔄 Deploy to Streamlit Cloud
-8. 🔄 Create demo video/GIF for portfolio
+7. ✅ Deploy to Streamlit Cloud
+8. 🔄 Create demo video/GIF for portfolio showcase
 9. 🔄 Add export to PDF/CSV functionality
+10. 🔄 Add unit tests for core analytics functions
+11. 🔄 Document performance benchmarks with actual timings
 
 ---
 
 ## 📊 SUCCESS METRICS
 - [x] **25,371 transactions** generated (2.5K users, 3.1K subscriptions) - optimized for cloud
-- [x] **All 4 injected patterns** detectable in analytics:
+- [x] **All 5 injected patterns** detectable in analytics:
   - ✅ Payment friction detection: High/Medium/Low tiers working correctly
-  - ✅ Gateway/country anomalies: Statistical variance detection functional
+  - ✅ Germany/Apple Pay friction: 15% higher failure (High friction >10% variance)
+  - ✅ France/PayPal friction: 9% higher failure (Medium friction 5-10% variance)
   - ✅ Bitcoin privacy: 100% NULL countries for crypto transactions
   - ✅ Black Friday seasonality: November signup spike detected
-- [x] **Dashboard loads in <1 minute** on Streamlit Cloud (instant with pre-committed data)
+- [x] **Dashboard loads in <2 seconds** on Streamlit Cloud (with pre-committed data)
 - [x] **Three-tier friction detection** (High/Medium/Low with proper thresholds)
 - [x] **Sankey diagram** clearly shows payment friction with country filters
 - [x] **Professional UX**: Clean white theme, Proton purple accents, readable text
