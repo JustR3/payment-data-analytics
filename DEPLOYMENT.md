@@ -7,7 +7,7 @@ This app automatically generates synthetic data on first run if the data directo
 ## Deployed URL
 
 Once deployed, your app will be available at:
-`https://payment-data-analytics-[your-app-id].streamlit.app`
+`https://payment-data-analysis.streamlit.app`
 
 ## Manual Deployment Steps
 

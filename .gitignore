@@ -21,9 +21,9 @@ env/
 *.swo
 *~
 
-# Generated data
-data/*.csv
-data/*.parquet
+# Generated data (commented to commit sample data for Streamlit Cloud)
+# data/*.csv
+# data/*.parquet
 
 # DuckDB
 *.duckdb

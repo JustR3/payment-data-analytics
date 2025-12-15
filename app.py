@@ -179,46 +179,30 @@ def load_analytics():
         os.path.join(data_dir, "transactions.csv"),
     ]
     
-    # Race condition protection - check for lock file first
-    if not os.path.exists(lock_file):
-        if not all(os.path.exists(f) for f in data_files):
-            st.info("🔄 Generating synthetic data (first run, ~30 seconds)...")
+    # Data should exist from pre-committed sample data
+    # Only generate if truly missing (shouldn't happen on Streamlit Cloud)
+    if not all(os.path.exists(f) for f in data_files):
+        st.warning("⚠️ Data files not found - this shouldn't happen on deployed version.")
+        st.info("🔄 Generating sample data...")
+        
+        try:
+            # Import and run data generator
+            from payment_intelligence.data_generator import PaymentDataGenerator
             
-            try:
-                # Import and run data generator
-                from payment_intelligence.data_generator import PaymentDataGenerator
-                
-                # Use smaller dataset for Streamlit Cloud (faster cold starts)
-                # Check if running on Streamlit Cloud
-                is_cloud = os.getenv('STREAMLIT_SHARING_MODE') is not None or \
-                           os.getenv('STREAMLIT_RUNTIME_ENV') == 'cloud'
-                
-                num_users = 5000 if is_cloud else 15000
-                
-                progress_text = f"Generating {num_users:,} users (~{num_users * 10:,} transactions)..."
-                progress_bar = st.progress(0, text=progress_text)
-                
-                os.makedirs(data_dir, exist_ok=True)
-                generator = PaymentDataGenerator(num_users=num_users)
-                
-                progress_bar.progress(30, text="Generating users...")
-                generator.generate_all_data(output_dir=data_dir)
-                
-                progress_bar.progress(100, text="Data generation complete!")
-                
-                # Create lock file to prevent re-generation
-                with open(lock_file, 'w') as f:
-                    f.write(f"Data generation completed: {num_users} users")
-                
-                st.success(f"✅ Generated {num_users:,} users successfully!")
-                progress_bar.empty()
-            except Exception as e:
-                st.error(f"❌ Data generation failed: {str(e)}")
-                # Clean up partial files
-                for f in data_files:
-                    if os.path.exists(f):
-                        os.remove(f)
-                raise
+            os.makedirs(data_dir, exist_ok=True)
+            
+            # Small dataset for emergency fallback
+            generator = PaymentDataGenerator(num_users=1000)
+            generator.generate_all_data(output_dir=data_dir)
+            
+            st.success("✅ Data generated successfully!")
+        except Exception as e:
+            st.error(f"❌ Data generation failed: {str(e)}")
+            # Clean up partial files
+            for f in data_files:
+                if os.path.exists(f):
+                    os.remove(f)
+            raise
     
     analytics = PaymentAnalytics(data_dir=data_dir)
     analytics.load_data()

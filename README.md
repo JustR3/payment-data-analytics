@@ -279,7 +279,7 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ---
 
-## 🙏 Acknowledgments
+## Summary
 
 Built to demonstrate:
 - Advanced SQL proficiency (DuckDB)
@@ -288,7 +288,3 @@ Built to demonstrate:
 - Production-grade code quality
 
 **Stack**: Python 3.10+ • DuckDB • Streamlit • Plotly • UV
-
----
-
-**⭐ If you find this project useful, please consider starring it!**
