@@ -185,8 +185,8 @@ def load_analytics():
         from payment_intelligence.data_generator import PaymentDataGenerator
         
         os.makedirs(data_dir, exist_ok=True)
-        generator = PaymentDataGenerator(num_users=15000, output_dir=data_dir)
-        generator.generate_all()
+        generator = PaymentDataGenerator(num_users=15000)
+        generator.generate_all_data(output_dir=data_dir)
         
         st.success("✅ Data generated successfully!")
     
