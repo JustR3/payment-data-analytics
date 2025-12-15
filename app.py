@@ -34,39 +34,39 @@ st.markdown(
     :root {
         --proton-purple: #6d4aff;          /* Proton primary purple */
         --proton-purple-dark: #5835d4;     /* Darker purple variant */
-        --proton-background: #0c0c14;      /* True Proton dark background */
-        --proton-surface: #1c1b22;         /* Surface color */
-        --proton-surface-light: #2e2d39;   /* Lighter surface */
-        --proton-text: #ffffff;            /* Primary text */
-        --proton-text-muted: #a8a8b3;      /* Muted text */
+        --proton-background: #ffffff;      /* White background */
+        --proton-surface: #f8f9fa;         /* Light surface color */
+        --proton-surface-light: #ffffff;   /* White surface */
+        --proton-text: #1a1a1a;            /* Primary text - dark */
+        --proton-text-muted: #6c757d;      /* Muted text - gray */
         --proton-success: #1ea672;         /* Success green */
         --proton-warning: #ff9900;         /* Warning orange */
         --proton-danger: #dc3545;          /* Danger red */
-        --proton-border: #3a3a48;          /* Border color */
+        --proton-border: #dee2e6;          /* Light border color */
     }
     
-    /* Main background - Proton dark */
+    /* Main background - White */
     .stApp {
-        background-color: #0c0c14;
-        color: #ffffff;
+        background-color: #ffffff;
+        color: #1a1a1a;
     }
     
-    /* Sidebar styling - Proton surface */
+    /* Sidebar styling - White with purple accent */
     [data-testid="stSidebar"] {
-        background-color: #1c1b22;
+        background-color: #ffffff;
         border-right: 2px solid #6d4aff;
     }
     
     /* Sidebar navigation items */
     [data-testid="stSidebar"] .element-container {
-        color: #ffffff;
+        color: #1a1a1a;
     }
     
     /* Metric cards - Proton style */
     [data-testid="stMetricValue"] {
         font-size: 2rem;
         font-weight: 700;
-        color: #ffffff;
+        color: #1a1a1a;
     }
     
     [data-testid="stMetricDelta"] {
@@ -76,7 +76,7 @@ st.markdown(
     
     /* Headers - Proton typography */
     h1, h2, h3 {
-        color: #ffffff;
+        color: #1a1a1a;
         font-weight: 600;
         letter-spacing: -0.02em;
     }
@@ -92,11 +92,11 @@ st.markdown(
         margin: 2rem 0;
     }
     
-    /* Info boxes - Proton surface style */
+    /* Info boxes - Light style */
     [data-testid="stAlert"] {
-        background-color: #2e2d39;
+        background-color: #f8f9fa;
         border-left: 4px solid #6d4aff;
-        color: #ffffff;
+        color: #1a1a1a;
     }
     
     /* Buttons - Proton purple */
@@ -114,16 +114,16 @@ st.markdown(
         box-shadow: 0 4px 12px rgba(109, 74, 255, 0.4);
     }
     
-    /* Input fields - Proton style */
+    /* Input fields - Light style */
     .stSelectbox, .stTextInput {
-        background-color: #2e2d39;
-        border-color: #3a3a48;
-        color: #ffffff;
+        background-color: #ffffff;
+        border-color: #dee2e6;
+        color: #1a1a1a;
     }
     
-    /* DataFrames - dark theme */
+    /* DataFrames - white theme */
     [data-testid="stDataFrame"] {
-        background-color: #1c1b22;
+        background-color: #ffffff;
     }
     
     /* Success/Warning/Danger badges */
@@ -306,8 +306,8 @@ def render_executive_overview(analytics):
         )
 
         fig.update_layout(
-            plot_bgcolor="#0c0c14",
-            paper_bgcolor="#0c0c14",
+            plot_bgcolor="#ffffff",
+            paper_bgcolor="#ffffff",
             height=400,
             xaxis_title="Cohort Month",
             yaxis_title="Percentage (%)",
@@ -319,11 +319,11 @@ def render_executive_overview(analytics):
                 y=1.02,
                 xanchor="right",
                 x=1,
-                font=dict(color="white")
+                font=dict(color="#1a1a1a")
             ),
-            font=dict(color="white", family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto"),
-            xaxis=dict(gridcolor="#2e2d39"),
-            yaxis=dict(gridcolor="#2e2d39"),
+            font=dict(color="#1a1a1a", family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto"),
+            xaxis=dict(gridcolor="#e9ecef"),
+            yaxis=dict(gridcolor="#e9ecef"),
         )
 
         st.plotly_chart(fig, use_container_width=True)
@@ -441,7 +441,7 @@ def render_friction_monitor(analytics):
                     node=dict(
                         pad=15,
                         thickness=20,
-                        line=dict(color="#1c1b22", width=2),
+                        line=dict(color="#dee2e6", width=2),
                         label=all_nodes,
                         color=node_colors,
                         customdata=all_nodes,
@@ -459,9 +459,9 @@ def render_friction_monitor(analytics):
         )
 
         fig.update_layout(
-            font=dict(size=12, color="white"),
-            plot_bgcolor="#0c0c14",
-            paper_bgcolor="#0c0c14",
+            font=dict(size=12, color="#1a1a1a"),
+            plot_bgcolor="#ffffff",
+            paper_bgcolor="#ffffff",
             height=600,
         )
 
@@ -650,9 +650,9 @@ def render_unit_economics(analytics):
                 texttemplate="%{text:.1f}%",
                 textfont={"size": 10, "color": "white"},
                 colorbar=dict(
-                    title=dict(text="Retention %", font=dict(color="white")),
+                    title=dict(text="Retention %", font=dict(color="#1a1a1a")),
                     ticksuffix="%",
-                    tickfont=dict(color="white")
+                    tickfont=dict(color="#1a1a1a")
                 ),
                 hovertemplate="Cohort: %{y}<br>Month %{x}<br>Retention: %{z:.1f}%<extra></extra>",
             )
@@ -661,12 +661,12 @@ def render_unit_economics(analytics):
         fig.update_layout(
             xaxis_title="Months Since Signup",
             yaxis_title="Signup Cohort",
-            plot_bgcolor="#0c0c14",
-            paper_bgcolor="#0c0c14",
+            plot_bgcolor="#ffffff",
+            paper_bgcolor="#ffffff",
             height=600,
-            font=dict(color="white", family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto"),
-            xaxis=dict(gridcolor="#2e2d39"),
-            yaxis=dict(gridcolor="#2e2d39"),
+            font=dict(color="#1a1a1a", family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto"),
+            xaxis=dict(gridcolor="#e9ecef"),
+            yaxis=dict(gridcolor="#e9ecef"),
         )
 
         st.plotly_chart(fig, use_container_width=True)
