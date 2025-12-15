@@ -477,9 +477,9 @@ def render_friction_monitor(analytics):
             data=[
                 go.Sankey(
                     node=dict(
-                        pad=15,
-                        thickness=20,
-                        line=dict(color="#dee2e6", width=2),
+                        pad=20,
+                        thickness=25,
+                        line=dict(color="#ffffff", width=3),
                         label=all_nodes,
                         color=node_colors,
                         customdata=all_nodes,
@@ -489,15 +489,26 @@ def render_friction_monitor(analytics):
                         source=sources,
                         target=targets,
                         value=values,
-                        color="rgba(109, 74, 255, 0.25)",
+                        color="rgba(109, 74, 255, 0.2)",
                         hovertemplate="%{source.label} → %{target.label}<br>%{value:,} transactions<extra></extra>",
+                    ),
+                    textfont=dict(
+                        color="#ffffff",
+                        size=14,
+                        family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                        weight=600,
                     ),
                 )
             ]
         )
 
         fig.update_layout(
-            font=dict(size=12, color="#1a1a1a"),
+            font=dict(
+                size=14,
+                color="#ffffff",
+                family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                weight=600,
+            ),
             plot_bgcolor="#ffffff",
             paper_bgcolor="#ffffff",
             height=600,
