@@ -9,7 +9,8 @@ from payment_intelligence.data_generator import PaymentDataGenerator
 
 def main():
     """Main execution function."""
-    # Generate dataset with 15,000 users (will produce ~35k-40k transactions)
+    # Generate dataset with 15,000 users for local development
+    # (Cloud deployment uses pre-committed 2,500 user dataset)
     generator = PaymentDataGenerator(num_users=15000)
     data = generator.generate_all_data(output_dir="./data")
 

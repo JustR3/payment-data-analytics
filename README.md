@@ -13,8 +13,8 @@
 **[→ View Live Dashboard](https://data-payment-analysis.streamlit.app/)**
 
 Experience the full analytics suite with:
-- **155,000+ synthetic transactions** across 4 payment gateways
-- **Real-time friction detection** - identifies Germany/Apple Pay 13% variance
+- **25,000+ synthetic transactions** across 4 payment gateways (2,500 users)
+- **Real-time friction detection** - identifies payment gateway anomalies
 - **Interactive Sankey flow diagrams** with region filtering
 - **12-month cohort retention analysis** with heatmap visualization
 
@@ -72,7 +72,7 @@ cd payment-data-analytics
 # Install dependencies with UV
 uv sync
 
-# Generate synthetic data (15k users, ~155k transactions)
+# Generate synthetic data (2.5k users for cloud, 15k for local)
 uv run python scripts/generate_data.py
 
 # Launch the dashboard
@@ -97,10 +97,10 @@ payment-data-analytics/
 │   └── run_analysis.py           # Ad-hoc analysis runner
 │
 ├── app.py                        # Streamlit dashboard app
-├── data/                         # Generated CSV files (gitignored)
-│   ├── users.csv
-│   ├── subscriptions.csv
-│   └── transactions.csv
+├── data/                         # Pre-generated sample data
+│   ├── users.csv                 # 2,500 users
+│   ├── subscriptions.csv         # ~3,100 subscriptions
+│   └── transactions.csv          # ~25,000 transactions
 │
 ├── pyproject.toml                # UV/Python configuration
 ├── TODO.md                       # Project task tracker
@@ -165,9 +165,9 @@ All analytics use **SQL-first approach** (no pandas `.groupby()`) with optimized
 ### 2. Friction Monitor
 - **Interactive Sankey Diagram**: Payment flow from Attempt → Gateway → Authorization → Settlement
 - **Three-tier friction detection**: 
-  - High (>10% variance): 1 detected (Germany/Apple Pay at -13.4%)
-  - Medium (5-10% variance): Regional patterns
-  - Low (<5% variance): Optimal performance
+  - High (>10% variance): Significant payment friction requiring immediate attention
+  - Medium (5-10% variance): Moderate regional payment issues
+  - Low (<5% variance): Optimal gateway performance
 - Country filtering with detailed variance analysis
 - Common error pattern identification (authentication_failed, card_declined, fraud_detected)
 
@@ -194,28 +194,30 @@ All analytics use **SQL-first approach** (no pandas `.groupby()`) with optimized
 
 ## 📈 Live Data Insights
 
-Based on the deployed application analyzing 155k+ transactions:
+Based on the deployed application with 25k+ transactions:
 
-**Friction Detection Example (Germany/Apple Pay)**:
+**Friction Detection Example**:
 ```sql
--- Real pattern detected in production dashboard
+-- Statistical anomaly detection in production
 SELECT 
     gateway,
     country,
     COUNT(*) as attempts,
     ROUND(SUM(CASE WHEN status = 'Success' THEN 1 ELSE 0 END)::FLOAT / COUNT(*) * 100, 1) as acceptance_rate
 FROM transactions
-WHERE country = 'DE' AND gateway = 'Apple Pay'
-GROUP BY gateway, country;
+WHERE country IS NOT NULL
+GROUP BY gateway, country
+HAVING COUNT(*) >= 50
+ORDER BY acceptance_rate;
 ```
 
-**Live Results**:
-- **Apple Pay (DE)**: 77.5% acceptance rate
-- **Baseline**: 90.9% overall acceptance
-- **Variance**: -13.4% (High Friction detected)
-- **Common Errors**: authentication_failed, card_declined, fraud_detected
+**Live Dashboard Features**:
+- Detects payment gateway friction patterns across regions
+- Compares individual gateway/country performance vs baseline
+- Identifies high-friction combinations requiring operational attention
+- Shows common error patterns (authentication failures, card declines, fraud flags)
 
-This demonstrates real payment friction that would require operational attention.
+The friction detection algorithm successfully identifies statistically significant variances from baseline acceptance rates.
 
 ---
 

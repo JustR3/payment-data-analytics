@@ -158,20 +158,20 @@ Build a deployed Streamlit application backed by DuckDB that analyzes synthetic 
 ---
 
 ## 📊 SUCCESS METRICS
-- [x] **155,649 transactions** generated (15K users, 18.6K subscriptions)
+- [x] **25,371 transactions** generated (2.5K users, 3.1K subscriptions) - optimized for cloud
 - [x] **All 4 injected patterns** detectable in analytics:
-  - ✅ High Friction (Germany/Apple Pay): 76.4% acceptance vs 90.8% baseline (-14.4%)
-  - ✅ Medium Friction (France/PayPal): 84.8% acceptance vs 90.8% baseline (-6.1%)
-  - ✅ Bitcoin privacy: 100% NULL countries, 15,832 transactions
-  - ✅ Black Friday churn: November cohorts 19.7% vs 14.9% baseline (+4.8%)
-  - ✅ Black Friday churn: November cohorts 19.7% vs 14.9% baseline (+4.8%)
-- [x] **Dashboard loads in ~4 seconds** (50% faster after optimization)
+  - ✅ Payment friction detection: High/Medium/Low tiers working correctly
+  - ✅ Gateway/country anomalies: Statistical variance detection functional
+  - ✅ Bitcoin privacy: 100% NULL countries for crypto transactions
+  - ✅ Black Friday seasonality: November signup spike detected
+- [x] **Dashboard loads in <1 minute** on Streamlit Cloud (instant with pre-committed data)
 - [x] **Three-tier friction detection** (High/Medium/Low with proper thresholds)
 - [x] **Sankey diagram** clearly shows payment friction with country filters
-- [x] **Professional UX**: Zero emojis, time-contextualized metrics, Metabase-style tables
+- [x] **Professional UX**: Clean white theme, Proton purple accents, readable text
 - [x] **Production-grade code**:
   - ✅ Ruff linted (zero errors)
   - ✅ Type hinted
   - ✅ Comprehensive docstrings
-  - ✅ Security hardened (SQL parameterization)
-  - ✅ Performance optimized (75% faster cohort queries)
+  - ✅ Security hardened (SQL parameterization, race condition protection)
+  - ✅ Performance optimized (data-relative dates, connection cleanup)
+  - ✅ **Deployed to Streamlit Cloud**: https://data-payment-analysis.streamlit.app/
