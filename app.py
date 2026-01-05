@@ -72,9 +72,34 @@ def load_analytics():
         os.path.join(data_dir, "transactions.csv"),
     ]
     
-    # Data should exist from pre-committed sample data
-    if not all(os.path.exists(f) for f in data_files):
-        st.warning("⚠️ Data files not found - generating sample data...")
+    # Validate data schema - if old schema detected, regenerate
+    regenerate_data = False
+    
+    if all(os.path.exists(f) for f in data_files):
+        try:
+            import pandas as pd
+            # Check transactions CSV for correct columns
+            tx_df = pd.read_csv(os.path.join(data_dir, "transactions.csv"), nrows=1)
+            required_cols = ['tx_id', 'sub_id', 'gateway', 'currency', 'status', 'error_code', 'tx_date', 'amount', 'country']
+            
+            if not all(col in tx_df.columns for col in required_cols):
+                st.warning("⚠️ Old data schema detected - regenerating...")
+                regenerate_data = True
+            else:
+                # Check for old gateways (Bitcoin) that shouldn't exist
+                tx_sample = pd.read_csv(os.path.join(data_dir, "transactions.csv"), nrows=100)
+                if 'Bitcoin' in tx_sample['gateway'].values:
+                    st.warning("⚠️ Legacy data detected - regenerating...")
+                    regenerate_data = True
+        except Exception as e:
+            st.warning(f"⚠️ Data validation failed: {str(e)} - regenerating...")
+            regenerate_data = True
+    else:
+        regenerate_data = True
+    
+    # Regenerate if needed
+    if regenerate_data:
+        st.info("🔄 Generating fresh data with correct schema...")
         
         try:
             from payment_intelligence.data_generator import PaymentDataGenerator
@@ -82,7 +107,7 @@ def load_analytics():
             os.makedirs(data_dir, exist_ok=True)
             
             # Smaller dataset for faster performance
-            generator = PaymentDataGenerator(num_users=500)
+            generator = PaymentDataGenerator(num_users=500, seed=42)
             generator.generate_all_data(output_dir=data_dir)
             
             st.success("✅ Data generated successfully!")
