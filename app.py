@@ -54,7 +54,7 @@ st.markdown(
 )
 
 
-@st.cache_resource(show_spinner="Loading analytics engine...")
+@st.cache_resource(show_spinner="Loading analytics engine...", hash_funcs={str: lambda _: None})
 def load_analytics():
     """
     Load analytics engine with caching.
@@ -63,6 +63,9 @@ def load_analytics():
     Returns:
         PaymentAnalytics instance with data loaded
     """
+    # Version marker to force cache invalidation when schema changes
+    DATA_VERSION = "v2.0_2026_01_05"
+    
     data_dir = "./data"
     
     # Check if data exists
