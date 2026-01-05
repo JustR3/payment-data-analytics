@@ -1,4 +1,7 @@
-# ...existing imports...
+import random
+import numpy as np
+import pandas as pd
+from faker import Faker
 
 class PaymentDataGenerator:
     """Optimized data generator for faster generation on Streamlit Cloud."""
