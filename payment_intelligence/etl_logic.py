@@ -35,8 +35,8 @@ class PaymentAnalytics:
         self.conn.execute("""
             CREATE INDEX idx_user_id ON users(user_id);
             CREATE INDEX idx_sub_user ON subscriptions(user_id);
-            CREATE INDEX idx_tx_sub ON transactions(subscription_id);
-            CREATE INDEX idx_tx_date ON transactions(transaction_date);
+            CREATE INDEX idx_tx_sub ON transactions(sub_id);
+            CREATE INDEX idx_tx_date ON transactions(tx_date);
             CREATE INDEX idx_tx_status ON transactions(status);
         """)
         
@@ -48,7 +48,7 @@ class PaymentAnalytics:
         result = self.conn.execute("""
             WITH active_subs AS (
                 SELECT COUNT(*) as active_count,
-                       SUM(price) as total_mrr
+                       SUM(mrr_amount) as total_mrr
                 FROM subscriptions
                 WHERE status = 'active'
             ),
@@ -58,22 +58,20 @@ class PaymentAnalytics:
                     COUNT(CASE WHEN status = 'success' THEN 1 END)::FLOAT / 
                     NULLIF(COUNT(*), 0) * 100 as success_rate
                 FROM transactions
-                WHERE transaction_date >= CURRENT_DATE - INTERVAL '30 days'
+                WHERE tx_date >= CURRENT_DATE - INTERVAL '30 days'
             ),
             churn_calc AS (
                 SELECT 
                     COUNT(CASE WHEN status = 'cancelled' THEN 1 END)::FLOAT /
                     NULLIF(COUNT(*), 0) * 100 as churn_rate
                 FROM subscriptions
-                WHERE DATE_TRUNC('month', cancelled_at) = 
-                      DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
             )
             SELECT 
                 a.active_count,
                 a.total_mrr,
                 r.avg_tx,
                 r.success_rate,
-                c.churn_rate
+                COALESCE(c.churn_rate, 0) as churn_rate
             FROM active_subs a, recent_txs r, churn_calc c
         """).fetchone()
         
@@ -90,12 +88,12 @@ class PaymentAnalytics:
         return self.conn.execute("""
             WITH monthly_stats AS (
                 SELECT 
-                    DATE_TRUNC('month', created_at) as cohort_month,
+                    DATE_TRUNC('month', start_date) as cohort_month,
                     COUNT(*) as total_subs,
                     COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as churned
                 FROM subscriptions
-                WHERE created_at >= CURRENT_DATE - INTERVAL '12 months'
-                GROUP BY DATE_TRUNC('month', created_at)
+                WHERE start_date >= CURRENT_DATE - INTERVAL '12 months'
+                GROUP BY DATE_TRUNC('month', start_date)
             )
             SELECT 
                 cohort_month,
@@ -166,16 +164,16 @@ class PaymentAnalytics:
             WITH cohorts AS (
                 SELECT 
                     user_id,
-                    DATE_TRUNC('month', created_at) as cohort_month
+                    DATE_TRUNC('month', start_date) as cohort_month
                 FROM subscriptions
-                WHERE created_at >= CURRENT_DATE - INTERVAL '{cohort_months} months'
+                WHERE start_date >= CURRENT_DATE - INTERVAL '{cohort_months} months'
             ),
             sub_months AS (
                 SELECT 
                     s.user_id,
                     c.cohort_month,
-                    DATE_TRUNC('month', s.created_at) as sub_month,
-                    DATEDIFF('month', c.cohort_month, DATE_TRUNC('month', s.created_at)) as months_since_signup
+                    DATE_TRUNC('month', s.start_date) as sub_month,
+                    DATEDIFF('month', c.cohort_month, DATE_TRUNC('month', s.start_date)) as months_since_signup
                 FROM subscriptions s
                 JOIN cohorts c ON s.user_id = c.user_id
                 WHERE s.status IN ('active', 'cancelled')
@@ -231,20 +229,20 @@ class PaymentAnalytics:
         return self.conn.execute("""
             WITH monthly_cash AS (
                 SELECT 
-                    DATE_TRUNC('month', transaction_date) as month,
+                    DATE_TRUNC('month', tx_date) as month,
                     SUM(amount) as cash_collected,
                     COUNT(*) as successful_payments
                 FROM transactions
                 WHERE status = 'success'
-                GROUP BY DATE_TRUNC('month', transaction_date)
+                GROUP BY DATE_TRUNC('month', tx_date)
             ),
             monthly_revenue AS (
                 SELECT 
-                    DATE_TRUNC('month', created_at) as month,
-                    SUM(price) as booked_revenue
+                    DATE_TRUNC('month', start_date) as month,
+                    SUM(mrr_amount) as booked_revenue
                 FROM subscriptions
                 WHERE status = 'active'
-                GROUP BY DATE_TRUNC('month', created_at)
+                GROUP BY DATE_TRUNC('month', start_date)
             )
             SELECT 
                 COALESCE(c.month, r.month) as month,
