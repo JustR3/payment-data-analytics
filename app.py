@@ -86,13 +86,24 @@ def load_analytics():
             generator.generate_all_data(output_dir=data_dir)
             
             st.success("✅ Data generated successfully!")
+        except ImportError as e:
+            st.error(f"❌ Import failed: {str(e)}. Check that payment_intelligence module is installed correctly.")
+            raise
         except Exception as e:
             st.error(f"❌ Data generation failed: {str(e)}")
+            import traceback
+            st.code(traceback.format_exc())
             raise
     
-    analytics = PaymentAnalytics(data_dir=data_dir)
-    analytics.load_data()
-    return analytics
+    try:
+        analytics = PaymentAnalytics(data_dir=data_dir)
+        analytics.load_data()
+        return analytics
+    except Exception as e:
+        st.error(f"❌ Failed to load analytics: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
+        raise
 
 
 # Increased cache TTL to reduce recomputation, added hash_funcs to avoid warnings

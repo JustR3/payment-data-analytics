@@ -1,4 +1,5 @@
 import random
+from pathlib import Path
 import numpy as np
 import pandas as pd
 from faker import Faker
@@ -42,12 +43,16 @@ class PaymentDataGenerator:
         
         # Batch date generation
         days_ago = np.random.randint(30, 730, size=self.num_users)
-        created_dates = pd.Timestamp.now() - pd.to_timedelta(days_ago, unit='D')
+        signup_dates = pd.Timestamp.now() - pd.to_timedelta(days_ago, unit='D')
+        
+        # Random anonymous flag (10% anonymous)
+        is_anonymous = np.random.choice([True, False], size=self.num_users, p=[0.1, 0.9])
         
         return pd.DataFrame({
             'user_id': user_ids,
             'country': countries,
-            'created_at': created_dates,
+            'signup_date': signup_dates,
+            'is_anonymous': is_anonymous,
         })
 
     def generate_subscriptions(self, users_df: pd.DataFrame) -> pd.DataFrame:
@@ -57,29 +62,31 @@ class PaymentDataGenerator:
         
         subscription_ids = np.arange(1, len(active_users) + 1)
         
-        # Vectorized status assignment (85% active, 15% cancelled)
+        # Vectorized status assignment (85% Active, 15% Cancelled) - match CSV casing
         statuses = np.random.choice(
-            ['active', 'cancelled'],
+            ['Active', 'Cancelled'],
             size=len(active_users),
             p=[0.85, 0.15]
         )
         
-        # Fixed price tiers for simplicity
-        prices = np.random.choice([9.99, 19.99, 49.99], size=len(active_users))
+        # Fixed price tiers for MRR
+        mrr_amounts = np.random.choice([3.99, 9.99, 19.99], size=len(active_users))
+        
+        # Plan types matching Proton
+        plan_types = np.random.choice(
+            ['Proton Drive', 'Proton Mail', 'Proton VPN', 'Proton Bundle'],
+            size=len(active_users),
+            p=[0.25, 0.35, 0.25, 0.15]
+        )
         
         df = pd.DataFrame({
-            'subscription_id': subscription_ids,
+            'sub_id': subscription_ids,
             'user_id': active_users['user_id'].values,
+            'plan_type': plan_types,
+            'mrr_amount': mrr_amounts,
             'status': statuses,
-            'price': prices,
-            'created_at': active_users['created_at'].values,
+            'start_date': active_users['signup_date'].values,
         })
-        
-        # Add cancellation dates for cancelled subs
-        df['cancelled_at'] = None
-        cancelled_mask = df['status'] == 'cancelled'
-        df.loc[cancelled_mask, 'cancelled_at'] = df.loc[cancelled_mask, 'created_at'] + \
-            pd.to_timedelta(np.random.randint(30, 365, size=cancelled_mask.sum()), unit='D')
         
         return df
 
@@ -94,21 +101,26 @@ class PaymentDataGenerator:
             for i in range(num_txs):
                 # Vectorized transaction generation
                 days_offset = 30 * i + np.random.randint(0, 10)
-                tx_date = sub['created_at'] + pd.Timedelta(days=days_offset)
+                tx_date = sub['start_date'] + pd.Timedelta(days=days_offset)
                 
-                # Skip if after cancellation
-                if sub['cancelled_at'] and tx_date > sub['cancelled_at']:
+                # Skip if subscription is cancelled and tx is after start
+                if sub['status'] == 'Cancelled' and i > 2:
                     break
                 
+                # Match CSV casing for status
+                status_choice = np.random.choice(self.statuses, p=self.status_weights)
+                status_formatted = status_choice.replace('_', ' ').title()  # 'success' -> 'Success'
+                
                 transactions.append({
-                    'transaction_id': len(transactions) + 1,
-                    'subscription_id': sub['subscription_id'],
-                    'amount': sub['price'],
+                    'tx_id': len(transactions) + 1,
+                    'sub_id': sub['sub_id'],
                     'gateway': np.random.choice(self.gateways, p=self.gateway_weights),
-                    'status': np.random.choice(self.statuses, p=self.status_weights),
-                    'transaction_date': tx_date,
+                    'currency': 'USD',
+                    'status': status_formatted if status_choice == 'success' else status_choice.replace('_', ' ').title(),
+                    'error_code': '' if status_choice == 'success' else f'ERR_{np.random.randint(100, 999)}',
+                    'tx_date': tx_date,
+                    'amount': sub['mrr_amount'],
                     'country': np.random.choice(self.countries, p=self.country_weights),
-                    'error_code': None if np.random.random() > 0.15 else f'ERR_{np.random.randint(100, 999)}',
                 })
         
         return pd.DataFrame(transactions)

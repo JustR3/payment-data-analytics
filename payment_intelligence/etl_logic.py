@@ -16,31 +16,43 @@ class PaymentAnalytics:
         if self._data_loaded:
             return
             
-        # Batch load all CSVs at once with optimized settings
-        self.conn.execute(f"""
-            SET threads TO 2;  -- Limit threads for free tier
-            SET memory_limit = '500MB';  -- Conservative memory usage
+        try:
+            # Batch load all CSVs at once with optimized settings
+            self.conn.execute(f"""
+                SET threads TO 2;  -- Limit threads for free tier
+                SET memory_limit = '500MB';  -- Conservative memory usage
+                
+                CREATE TABLE users AS 
+                SELECT * FROM read_csv_auto('{self.data_dir}/users.csv');
+                
+                CREATE TABLE subscriptions AS 
+                SELECT * FROM read_csv_auto('{self.data_dir}/subscriptions.csv');
+                
+                CREATE TABLE transactions AS 
+                SELECT * FROM read_csv_auto('{self.data_dir}/transactions.csv');
+            """)
             
-            CREATE TABLE users AS 
-            SELECT * FROM read_csv_auto('{self.data_dir}/users.csv');
+            # Validate data loaded
+            user_count = self.conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+            sub_count = self.conn.execute("SELECT COUNT(*) FROM subscriptions").fetchone()[0]
+            tx_count = self.conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0]
             
-            CREATE TABLE subscriptions AS 
-            SELECT * FROM read_csv_auto('{self.data_dir}/subscriptions.csv');
+            if user_count == 0 or sub_count == 0 or tx_count == 0:
+                raise ValueError(f"Data validation failed: users={user_count}, subs={sub_count}, txs={tx_count}")
             
-            CREATE TABLE transactions AS 
-            SELECT * FROM read_csv_auto('{self.data_dir}/transactions.csv');
-        """)
-        
-        # Create indexes for frequently queried columns
-        self.conn.execute("""
-            CREATE INDEX idx_user_id ON users(user_id);
-            CREATE INDEX idx_sub_user ON subscriptions(user_id);
-            CREATE INDEX idx_tx_sub ON transactions(sub_id);
-            CREATE INDEX idx_tx_date ON transactions(tx_date);
-            CREATE INDEX idx_tx_status ON transactions(status);
-        """)
-        
-        self._data_loaded = True
+            # Create indexes for frequently queried columns
+            self.conn.execute("""
+                CREATE INDEX idx_user_id ON users(user_id);
+                CREATE INDEX idx_sub_user ON subscriptions(user_id);
+                CREATE INDEX idx_tx_sub ON transactions(sub_id);
+                CREATE INDEX idx_tx_date ON transactions(tx_date);
+                CREATE INDEX idx_tx_status ON transactions(status);
+            """)
+            
+            self._data_loaded = True
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to load data into DuckDB: {str(e)}") from e
 
     def executive_metrics(self) -> dict:
         """Get executive metrics with single optimized query."""
@@ -50,19 +62,19 @@ class PaymentAnalytics:
                 SELECT COUNT(*) as active_count,
                        SUM(mrr_amount) as total_mrr
                 FROM subscriptions
-                WHERE status = 'active'
+                WHERE status = 'Active'
             ),
             recent_txs AS (
                 SELECT 
-                    AVG(CASE WHEN status = 'success' THEN amount ELSE NULL END) as avg_tx,
-                    COUNT(CASE WHEN status = 'success' THEN 1 END)::FLOAT / 
+                    AVG(CASE WHEN status = 'Success' THEN amount ELSE NULL END) as avg_tx,
+                    COUNT(CASE WHEN status = 'Success' THEN 1 END)::FLOAT / 
                     NULLIF(COUNT(*), 0) * 100 as success_rate
                 FROM transactions
                 WHERE tx_date >= CURRENT_DATE - INTERVAL '30 days'
             ),
             churn_calc AS (
                 SELECT 
-                    COUNT(CASE WHEN status = 'cancelled' THEN 1 END)::FLOAT /
+                    COUNT(CASE WHEN status = 'Cancelled' THEN 1 END)::FLOAT /
                     NULLIF(COUNT(*), 0) * 100 as churn_rate
                 FROM subscriptions
             )
@@ -90,7 +102,7 @@ class PaymentAnalytics:
                 SELECT 
                     DATE_TRUNC('month', start_date) as cohort_month,
                     COUNT(*) as total_subs,
-                    COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as churned
+                    COUNT(CASE WHEN status = 'Cancelled' THEN 1 END) as churned
                 FROM subscriptions
                 WHERE start_date >= CURRENT_DATE - INTERVAL '12 months'
                 GROUP BY DATE_TRUNC('month', start_date)
@@ -112,11 +124,11 @@ class PaymentAnalytics:
                 gateway,
                 country,
                 COUNT(*) as total_attempts,
-                COUNT(CASE WHEN status = 'success' THEN 1 END)::FLOAT / 
+                COUNT(CASE WHEN status = 'Success' THEN 1 END)::FLOAT / 
                     NULLIF(COUNT(*), 0) * 100 as acceptance_rate_pct,
-                COUNT(CASE WHEN status = 'soft_decline' THEN 1 END)::FLOAT / 
+                COUNT(CASE WHEN status = 'Soft Decline' THEN 1 END)::FLOAT / 
                     NULLIF(COUNT(*), 0) * 100 as soft_decline_rate_pct,
-                COUNT(CASE WHEN status = 'hard_decline' THEN 1 END)::FLOAT / 
+                COUNT(CASE WHEN status = 'Hard Decline' THEN 1 END)::FLOAT / 
                     NULLIF(COUNT(*), 0) * 100 as hard_decline_rate_pct
             FROM transactions
             GROUP BY gateway, country
@@ -133,7 +145,7 @@ class PaymentAnalytics:
                     gateway,
                     country,
                     COUNT(*) as attempts,
-                    COUNT(CASE WHEN status = 'success' THEN 1 END)::FLOAT / 
+                    COUNT(CASE WHEN status = 'Success' THEN 1 END)::FLOAT / 
                         NULLIF(COUNT(*), 0) * 100 as acceptance_rate_pct,
                     STRING_AGG(DISTINCT error_code, ', ') as common_errors
                 FROM transactions
@@ -176,7 +188,7 @@ class PaymentAnalytics:
                     DATEDIFF('month', c.cohort_month, DATE_TRUNC('month', s.start_date)) as months_since_signup
                 FROM subscriptions s
                 JOIN cohorts c ON s.user_id = c.user_id
-                WHERE s.status IN ('active', 'cancelled')
+                WHERE s.status IN ('Active', 'Cancelled')
             )
             SELECT 
                 cohort_month,
@@ -208,7 +220,7 @@ class PaymentAnalytics:
             -- Gateway to Status
             SELECT gateway as source, 
                    CASE status 
-                       WHEN 'success' THEN 'Authorized'
+                       WHEN 'Success' THEN 'Authorized'
                        ELSE 'Declined'
                    END as target,
                    COUNT(*) as value
@@ -221,7 +233,7 @@ class PaymentAnalytics:
             -- Authorized to Settled
             SELECT 'Authorized' as source, 'Settled' as target, COUNT(*) as value
             FROM transactions
-            WHERE status = 'success' {country_clause}
+            WHERE status = 'Success' {country_clause}
         """).df()
 
     def revenue_reconciliation(self) -> pd.DataFrame:
@@ -233,7 +245,7 @@ class PaymentAnalytics:
                     SUM(amount) as cash_collected,
                     COUNT(*) as successful_payments
                 FROM transactions
-                WHERE status = 'success'
+                WHERE status = 'Success'
                 GROUP BY DATE_TRUNC('month', tx_date)
             ),
             monthly_revenue AS (
@@ -241,7 +253,7 @@ class PaymentAnalytics:
                     DATE_TRUNC('month', start_date) as month,
                     SUM(mrr_amount) as booked_revenue
                 FROM subscriptions
-                WHERE status = 'active'
+                WHERE status = 'Active'
                 GROUP BY DATE_TRUNC('month', start_date)
             )
             SELECT 
