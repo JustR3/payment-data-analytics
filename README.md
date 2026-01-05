@@ -13,8 +13,8 @@
 **[→ View Live Dashboard](https://data-payment-analysis.streamlit.app/)**
 
 Experience the full analytics suite with:
-- **25,000+ synthetic transactions** across 4 payment gateways (2,500 users)
-- **Real-time friction detection** - identifies payment gateway anomalies
+- **1,500+ synthetic transactions** across 3 payment gateways (Stripe, PayPal, Apple Pay)
+- **Real-time friction detection** - identifies statistical payment gateway anomalies
 - **Interactive Sankey flow diagrams** with region filtering
 - **12-month cohort retention analysis** with heatmap visualization
 
@@ -27,9 +27,9 @@ Experience the full analytics suite with:
 Comprehensive payment analytics platform demonstrating:
 - **Payment Processing Analytics** - Multi-gateway transaction analysis
 - **Subscription Metrics** - MRR, churn, cohort retention
-- **Fraud & Friction Detection** - Statistical anomaly detection across gateways and geographies
+- **Statistical Friction Detection** - Automatic anomaly detection across gateways and regions
 - **Revenue Reconciliation** - Cash vs. booked revenue tracking
-- **Privacy-First Analytics** - Anonymous user handling, crypto payment analysis
+- **Production-Ready Dashboard** - Proton-branded analytics interface
 
 ---
 
@@ -86,14 +86,14 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Install dependencies with UV
 uv sync
 
-# Generate synthetic data (15,000 users for local development)
+# Generate synthetic data (500 users for faster performance)
 uv run python scripts/generate_data.py
 
 # Launch the dashboard
 uv run streamlit run app.py
 ```
 
-**Note**: The repository includes pre-generated sample data (2,500 users, ~25,000 transactions) for Streamlit Cloud deployment. The app will auto-generate a minimal dataset (1,000 users) only if data files are missing.
+**Note**: The repository includes pre-generated sample data (500 users, ~1,500 transactions) for instant deployment. The app will auto-generate data if files are missing or if an outdated schema is detected.
 
 ---
 
@@ -112,9 +112,9 @@ payment-data-analytics/
 │
 ├── app.py                        # Streamlit dashboard app
 ├── data/                         # Pre-generated sample data
-│   ├── users.csv                 # 2,500 users
-│   ├── subscriptions.csv         # ~3,100 subscriptions
-│   └── transactions.csv          # ~25,000 transactions
+│   ├── users.csv                 # 500 users
+│   ├── subscriptions.csv         # ~350 subscriptions
+│   └── transactions.csv          # ~1,500 transactions
 │
 ├── pyproject.toml                # UV/Python configuration
 ├── TODO.md                       # Project task tracker
@@ -123,37 +123,31 @@ payment-data-analytics/
 
 ---
 
-## 🎲 Synthetic Data Patterns
+## 🎲 Synthetic Data Generation
 
-The data generator injects **5 realistic patterns** to demonstrate anomaly detection capabilities:
+The data generator creates realistic subscription payment data with the following characteristics:
 
-### 1. **High Friction Gateway Pattern** (Germany + Apple Pay)
-- **15% higher failure rate** than baseline (High friction, >10% variance)
-- Simulates Strong Customer Authentication (SCA) requirements in EU
-- Common errors: `authentication_failed`, `card_declined`, `fraud_detected`
-- **Detection**: Flagged as "High Friction" in dashboard
+### Data Distribution
+- **3 Payment Gateways**: Stripe (50%), PayPal (30%), Apple Pay (20%)
+- **5 Geographic Regions**: US (40%), UK (20%), DE (15%), FR (15%), CA (10%)
+- **3 Plan Types**: Proton Drive, Proton Mail, Proton VPN, Proton Bundle
+- **Subscription Status**: 85% Active, 15% Cancelled
+- **Payment Status**: 85% Success, 10% Soft Decline, 5% Hard Decline
 
-### 2. **Medium Friction Gateway Pattern** (France + PayPal)
-- **9% higher failure rate** than baseline (Medium friction, 5-10% variance)
-- Simulates regional payment authentication issues
-- Common errors: `card_declined`, `authentication_failed`, `insufficient_funds`
-- **Detection**: Flagged as "Medium Friction" in dashboard
+### Realistic Patterns
+- **Monthly transactions** - 1-5 recurring payments per subscription
+- **Geography-aware** - Region-based payment method preferences
+- **Time-series data** - Historical data spanning up to 2 years
+- **Error simulation** - Realistic error codes (ERR_100-999) for failed transactions
+- **Churn modeling** - Natural subscription lifecycle patterns
 
-### 3. **Crypto Payment Privacy**
-- Bitcoin transactions have **NULL country** data (privacy-first approach)
-- Unique error patterns: `underpayment`, not traditional card declines
-- **0% chargeback rate** (irreversible cryptocurrency transactions)
-- **Observable**: 100% NULL country for Bitcoin gateway
+### Friction Detection
+The dashboard uses **statistical anomaly detection** to identify gateway/region combinations with:
+- **High Friction**: >10% below baseline acceptance rate
+- **Medium Friction**: 5-10% below baseline acceptance rate
+- **Low Friction**: Within 5% of baseline
 
-### 4. **Black Friday Seasonality**
-- **3x signup spike** in November (simulating promotional campaigns)
-- November cohorts show **higher churn rates** 3 months later
-- **Observable**: Elevated November signups vs monthly baseline
-
-### 5. **Multi-Gateway Distribution**
-- Realistic payment method distribution across Stripe, PayPal, Apple Pay, Bitcoin
-- Geography-based payment preferences (e.g., higher PayPal usage in Europe)
-- **Observable**: Varied transaction volumes across gateway/region pairs
+Friction is calculated by comparing each gateway/region pair's acceptance rate against the overall baseline, helping identify operational issues requiring attention.
 
 ---
 
@@ -186,12 +180,12 @@ All analytics use **SQL-first approach** (no pandas `.groupby()`) with optimized
 
 ### 2. Friction Monitor
 - **Interactive Sankey Diagram**: Payment flow from Attempt → Gateway → Authorization → Settlement
-- **Three-tier friction detection**: 
+- **Statistical friction detection**: 
   - High (>10% variance): Significant payment friction requiring immediate attention
   - Medium (5-10% variance): Moderate regional payment issues
   - Low (<5% variance): Optimal gateway performance
 - Country filtering with detailed variance analysis
-- Common error pattern identification (including authentication_failed, card_declined, fraud_detected, insufficient_funds, expired_card, network_error, and crypto-specific underpayment errors)
+- Automatic baseline comparison across all gateway/region combinations
 
 ### 3. Cohort Analysis
 - **12-month retention heatmap** with Proton purple gradient visualization
@@ -216,66 +210,67 @@ All analytics use **SQL-first approach** (no pandas `.groupby()`) with optimized
 
 ## 📈 Live Data Insights
 
-Based on the deployed application with 25k+ transactions:
+Based on the deployed application with 1,500+ transactions:
 
 **Friction Detection Example**:
 ```sql
--- Statistical anomaly detection in production
+-- Statistical anomaly detection across gateway/region pairs
 SELECT 
     gateway,
     country,
     COUNT(*) as attempts,
-    ROUND(SUM(CASE WHEN status = 'Success' THEN 1 ELSE 0 END)::FLOAT / COUNT(*) * 100, 1) as acceptance_rate
+    ROUND(COUNT(CASE WHEN status = 'Success' THEN 1 END)::FLOAT / COUNT(*) * 100, 1) as acceptance_rate,
+    ROUND(acceptance_rate - AVG(acceptance_rate) OVER (), 1) as variance_from_baseline
 FROM transactions
 WHERE country IS NOT NULL
 GROUP BY gateway, country
-HAVING COUNT(*) >= 50
-ORDER BY acceptance_rate;
+HAVING COUNT(*) >= 30
+ORDER BY variance_from_baseline;
 ```
 
 **Live Dashboard Features**:
-- Detects payment gateway friction patterns across regions
+- Detects payment gateway friction through statistical analysis
 - Compares individual gateway/country performance vs baseline
-- Identifies high-friction combinations requiring operational attention
-- Shows common error patterns (authentication failures, card declines, fraud flags)
+- Flags high and medium friction combinations for investigation
+- Shows transaction volumes and acceptance rates by region
 
-The friction detection algorithm successfully identifies statistically significant variances from baseline acceptance rates.
+The friction detection algorithm identifies statistically significant deviations from baseline acceptance rates, helping prioritize operational improvements.
 
 ---
 
 ## 🚧 Development Status
 
-- [x] Synthetic data generation with 4 injected patterns
+- [x] Synthetic data generation with realistic patterns
 - [x] DuckDB analytics layer with SQL-first approach
 - [x] Streamlit dashboard with Proton brand styling
-- [x] Performance optimizations (75% faster cohort retention)
-- [x] Security hardening (SQL parameterization, race condition protection)
+- [x] Statistical friction detection algorithm
+- [x] Security hardening (SQL parameterization, input validation)
 - [x] **Deployed to Streamlit Cloud** - [Live Demo](https://data-payment-analysis.streamlit.app/)
-- [x] Bug fixes: data-relative date filtering, proper churn calculation
-- [ ] Advanced features: ML fraud detection, real-time alerts, CSV export
+- [x] Automatic data validation and schema checking
+- [ ] Advanced features: Cohort LTV prediction, real-time alerts, CSV export
 
 ---
 
 ## ⚡ Performance Optimizations
 
-**Production improvements (December 2025)**:
+**Production features (January 2026)**:
 
-| Metric | Before | After | Improvement | Impact |
-|--------|--------|-------|-------------|--------|
-| Cohort Retention Query | ~800ms | ~200ms | 75% faster | Fixed CROSS JOIN Cartesian product |
-| Revenue Reconciliation | ~500ms | ~300ms | 40% faster | Replaced FULL OUTER JOIN with UNION ALL |
-| Gateway Friction Detection | ~400ms | ~300ms | 25% faster | Removed unnecessary CROSS JOIN |
-| Database Indexes | N/A | N/A | 5-10x faster joins | Added 5 critical indexes on foreign keys |
-| Date Filtering | N/A | N/A | Future-proof | Data-relative dates instead of CURRENT_DATE |
-| Overall Dashboard Load | ~3.5s | ~1.7s | 50% faster | Combined optimizations |
+| Feature | Implementation | Benefit |
+|---------|---------------|----------|
+| In-Memory Database | DuckDB with 500MB limit | Sub-second query performance |
+| Smart Caching | Streamlit @cache_resource/@cache_data | Instant dashboard reloads |
+| SQL-First Analytics | Zero pandas aggregations | Optimized query execution |
+| Indexed Queries | 5 strategic indexes | 5-10x faster joins |
+| Schema Validation | Automatic data validation | Prevents deployment errors |
+| Auto-Regeneration | Detects and fixes invalid data | Self-healing deployments |
 
-*Note: Timings are approximate and measured on 25k transaction dataset with DuckDB in-memory mode.*
+*Typical dashboard load time: <2 seconds on 1,500 transaction dataset*
 
-**Critical Bug Fixes**:
-- ✅ Fixed churn rate calculation - now accurately reflects monthly churn
-- ✅ Race condition protection - safe concurrent data generation
-- ✅ Database connection cleanup - prevents memory leaks
-- ✅ SQL query optimization - limited error aggregation, improved performance
+**Recent Improvements**:
+- ✅ Fixed column name mismatches between generator and ETL
+- ✅ Added comprehensive error handling and validation
+- ✅ Implemented automatic data schema detection
+- ✅ Added cache invalidation for deployment updates
 
 ---
 
